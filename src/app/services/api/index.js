@@ -13,3 +13,4 @@ export { default as contactService } from './contactService';
 export { default as uploadService } from './uploadService';
 export { default as commonService } from './commonService';
 export { default as categoryService } from './categoryService';
+export { default as publicListingsService } from './publicListingsService';

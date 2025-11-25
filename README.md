@@ -1,8 +1,26 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
+## Project Overview
+
+A classified ads/marketplace platform supporting multiple listing types (cars, properties) with user authentication, profile management, and admin dashboard.
+
 ## Getting Started
 
-First, run the development server:
+### Environment Setup
+
+1. Copy the environment example file:
+   ```bash
+   cp .env.local.example .env.local
+   ```
+
+2. Configure your environment variables in `.env.local`:
+   ```bash
+   NEXT_PUBLIC_API_URL=http://localhost:5000/api
+   ```
+
+### Development Server
+
+Run the development server:
 
 ```bash
 npm run dev
