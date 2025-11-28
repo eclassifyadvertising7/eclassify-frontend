@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+
 import { Phone, Lock, User, Eye, EyeOff } from "lucide-react"
 import Link from "next/link"
 import Header from "@/components/Header"
@@ -23,11 +23,8 @@ export default function AuthPage() {
   useEffect(() => {
     if (isAuthenticated) {
       const user = authService.getCurrentUser()
-      if (user?.role === "admin" || user?.role === "super_admin") {
-        router.push("/admin")
-      } else {
-        router.push("/profile")
-      }
+      const redirectPath = (user?.role === "admin" || user?.role === "super_admin") ? "/admin" : "/"
+      router.replace(redirectPath)
     }
   }, [isAuthenticated, router])
   
@@ -86,17 +83,13 @@ export default function AuthPage() {
           countryCode: "+91"
         })
         
-        toast.success("Account created successfully!")
-        
         const user = response?.data?.user
-        if (user?.role === "admin" || user?.role === "super_admin") {
-          router.push("/admin")
-        } else {
-          router.push("/profile")
-        }
+        const redirectPath = (user?.role === "admin" || user?.role === "super_admin") ? "/admin" : "/"
+        
+        toast.success("Account created successfully!")
+        router.replace(redirectPath)
       } catch (error) {
         toast.error(error.message || "Signup failed. Please try again.")
-      } finally {
         setLoading(false)
       }
     } else {
@@ -117,17 +110,13 @@ export default function AuthPage() {
           password: password
         })
         
-        toast.success("Login successful!")
-        
         const user = response?.data?.user
-        if (user?.role === "admin" || user?.role === "super_admin") {
-          router.push("/admin")
-        } else {
-          router.push("/profile")
-        }
+        const redirectPath = (user?.role === "admin" || user?.role === "super_admin") ? "/admin" : "/"
+        
+        toast.success("Login successful!")
+        router.replace(redirectPath)
       } catch (error) {
         toast.error(error.message || "Login failed. Please try again.")
-      } finally {
         setLoading(false)
       }
     }
@@ -170,20 +159,17 @@ export default function AuthPage() {
       const response = await authService.verifyOTP(mobile, otp)
       
       if (response.success) {
-        toast.success(isSignUp ? "Account created successfully!" : "Login successful!")
-        
         const user = response?.data?.user
-        if (user?.role === "admin" || user?.role === "super_admin") {
-          router.push("/admin")
-        } else {
-          router.push("/profile")
-        }
+        const redirectPath = (user?.role === "admin" || user?.role === "super_admin") ? "/admin" : "/"
+        
+        toast.success(isSignUp ? "Account created successfully!" : "Login successful!")
+        router.replace(redirectPath)
       } else {
         toast.error(response.message || "Invalid OTP")
+        setLoading(false)
       }
     } catch (error) {
       toast.error(error.message || "OTP verification failed")
-    } finally {
       setLoading(false)
     }
   }
@@ -229,6 +215,18 @@ export default function AuthPage() {
               <CardDescription className="text-gray-500">
                 {isSignUp ? "Join our marketplace today" : "Access your account"}
               </CardDescription>
+              {!isSignUp && (
+                <p className="text-sm text-gray-600 mt-3">
+                  Not registered yet?{" "}
+                  <button
+                    type="button"
+                    onClick={toggleAuthMode}
+                    className="font-semibold text-primary hover:text-cyan-600 transition-colors underline decoration-2 underline-offset-2"
+                  >
+                    Sign up here
+                  </button>
+                </p>
+              )}
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Auth Method Toggle */}
@@ -452,18 +450,20 @@ export default function AuthPage() {
               </Button>
 
               {/* Toggle Sign In / Sign Up */}
-              <div className="text-center pt-4 border-t">
-                <p className="text-sm text-gray-600">
-                  {isSignUp ? "Already have an account?" : "Not registered yet?"}{" "}
-                  <button
-                    type="button"
-                    onClick={toggleAuthMode}
-                    className="font-semibold text-primary hover:text-cyan-600 transition-colors underline decoration-2 underline-offset-2"
-                  >
-                    {isSignUp ? "Sign in here" : "Sign up here"}
-                  </button>
-                </p>
-              </div>
+              {isSignUp && (
+                <div className="text-center pt-4 border-t">
+                  <p className="text-sm text-gray-600">
+                    Already have an account?{" "}
+                    <button
+                      type="button"
+                      onClick={toggleAuthMode}
+                      className="font-semibold text-primary hover:text-cyan-600 transition-colors underline decoration-2 underline-offset-2"
+                    >
+                      Sign in here
+                    </button>
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
 

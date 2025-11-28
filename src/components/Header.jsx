@@ -10,6 +10,7 @@ import {
   X
 } from "lucide-react"
 import Link from "next/link"
+import { useRouter, usePathname } from "next/navigation"
 import UserHeader from "./user-header/page"
 import { useAuth } from "@/app/context/AuthContext"
 
@@ -18,6 +19,22 @@ export default function Header() {
   const [selectedCategory, setSelectedCategory] = useState("All Categories")
   const [isCategoryOpen, setIsCategoryOpen] = useState(false)
   const { isAuthenticated } = useAuth()
+  const router = useRouter()
+  const pathname = usePathname()
+
+  const handleSellClick = () => {
+    if (!isAuthenticated) {
+      // Only navigate if not already on sign-in page
+      if (pathname !== "/sign-in") {
+        router.push("/sign-in")
+      }
+    } else {
+      // Only navigate if not already on post page
+      if (pathname !== "/post") {
+        router.push("/post")
+      }
+    }
+  }
 
 
   const categories = [
@@ -126,11 +143,12 @@ export default function Header() {
 
 
               {/* Add Listing Button */}
-              <Link href="/post">
-                <button className="flex text-white bg-gradient-to-r from-blue-500 via-primary to-primary hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-blue-300 dark:focus:ring-blue-800 shadow-md shadow-blue-500/50 dark:shadow-lg dark:shadow-blue-800/80 font-medium rounded-lg text-sm px-5 py-2.5 text-center  ">
-                  <PlusIcon className="h-4 w-4 mr-2 font-extrabold" />SELL
-                </button>
-              </Link>
+              <button 
+                onClick={handleSellClick}
+                className="flex text-white bg-gradient-to-r from-blue-500 via-primary to-primary hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-blue-300 dark:focus:ring-blue-800 shadow-md shadow-blue-500/50 dark:shadow-lg dark:shadow-blue-800/80 font-medium rounded-lg text-sm px-5 py-2.5 text-center"
+              >
+                <PlusIcon className="h-4 w-4 mr-2 font-extrabold" />SELL
+              </button>
 
               {/* Language Selector - Hidden on mobile */}
               {/* <div className="hidden lg:flex items-center space-x-1">
@@ -228,7 +246,10 @@ export default function Header() {
               <UserHeader />
             )}
             {/* <button className="block w-full text-left py-2 text-gray-600 hover:text-gray-900">Register</button> */}
-            <button className="w-full bg-primary text-white px-4 py-2 rounded-md hover:bg-cyan-600 mt-2 flex items-center">
+            <button 
+              onClick={handleSellClick}
+              className="w-full bg-primary text-white px-4 py-2 rounded-md hover:bg-cyan-600 mt-2 flex items-center"
+            >
               <PlusIcon className="h-4 w-4 mr-2" /> SELL
             </button>
             {/* <div className="flex items-center py-2 text-gray-600">
