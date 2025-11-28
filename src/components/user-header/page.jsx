@@ -131,48 +131,44 @@ const UserHeader = () => {
                 {/* Menu Items */}
                 <div className="py-2">
                   <DropdownMenuItem className="flex items-center gap-3 px-4 py-3">
-                    <FileText className="h-5 w-5" />
-                    <span>My ADS</span>
+                    <Heart className="h-5 w-5" />
+                    <span>My Favourites</span>
+                  </DropdownMenuItem>
+
+                  <Link href="/my-listings">
+                    <DropdownMenuItem className="flex items-center gap-3 px-4 py-3">
+                      <FileText className="h-5 w-5" />
+                      <span>My Listings</span>
+                    </DropdownMenuItem>
+                  </Link>
+
+                  <DropdownMenuItem className="flex items-center gap-3 px-4 py-3">
+                    <MessageCircle className="h-5 w-5" />
+                    <span>Chat</span>
                   </DropdownMenuItem>
 
                   <DropdownMenuItem className="flex items-center gap-3 px-4 py-3">
                     <Package className="h-5 w-5" />
-                    <span>Buy Business Packages</span>
+                    <span>My Subscriptions</span>
                   </DropdownMenuItem>
-
-                  <DropdownMenuItem className="flex items-center gap-3 px-4 py-3">
-                    <ShoppingCart className="h-5 w-5" />
-                    <span>View Cart</span>
-                  </DropdownMenuItem>
-
-                  {/* <DropdownMenuItem className="flex items-center gap-3 px-4 py-3">
-                    <CreditCard className="h-5 w-5" />
-                    <span>Bought Packages & Billing</span>
-                  </DropdownMenuItem> */}
-
-                  {/* <DropdownMenuItem className="flex items-center justify-between px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <Star className="h-5 w-5" />
-                      <span>Become an Elite Buyer</span>
-                    </div>
-                    <Badge className="bg-red-500 text-white text-xs px-2 py-1">New</Badge>
-                  </DropdownMenuItem> */}
 
                   <DropdownMenuSeparator />
-
-                  <DropdownMenuItem className="flex items-center gap-3 px-4 py-3">
-                    <HelpCircle className="h-5 w-5" />
-                    <span>Help</span>
-                  </DropdownMenuItem>
 
                   <DropdownMenuItem className="flex items-center gap-3 px-4 py-3">
                     <Settings className="h-5 w-5" />
                     <span>Settings</span>
                   </DropdownMenuItem>
 
+                  <Link href="/request-data">
+                    <DropdownMenuItem className="flex items-center gap-3 px-4 py-3">
+                      <HelpCircle className="h-5 w-5" />
+                      <span>Request Data</span>
+                    </DropdownMenuItem>
+                  </Link>
+
                   <DropdownMenuItem className="flex items-center gap-3 px-4 py-3">
                     <Download className="h-5 w-5" />
-                    <span>Install OLX Lite app</span>
+                    <span>Install App</span>
                   </DropdownMenuItem>
 
                   <DropdownMenuSeparator />

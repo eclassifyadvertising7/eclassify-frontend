@@ -2,7 +2,8 @@
 
 import { Search, Bell, Menu, ChevronDown, User, LogOut, Settings } from "lucide-react"
 import { useAuth } from "@/app/context/AuthContext"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
+import Link from "next/link"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,9 +13,10 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { toast } from "sonner"
 
-export default function AdminHeader({ activeTab, setSidebarOpen, setActiveTab }) {
+export default function AdminHeader({ setSidebarOpen }) {
   const { user, logout } = useAuth()
   const router = useRouter()
+  const pathname = usePathname()
 
   const handleLogout = async () => {
     try {
@@ -25,10 +27,20 @@ export default function AdminHeader({ activeTab, setSidebarOpen, setActiveTab })
     }
   }
 
-  const handleProfileClick = () => {
-    if (setActiveTab) {
-      setActiveTab("profile")
-    }
+  // Get page title from pathname
+  const getPageTitle = () => {
+    if (pathname === "/admin") return "Dashboard"
+    if (pathname.startsWith("/admin/subscriptions")) return "Subscription Plans"
+    if (pathname.startsWith("/admin/profile")) return "Profile"
+    if (pathname.startsWith("/admin/categories")) return "Categories"
+    if (pathname.startsWith("/admin/car-data")) return "Car Data"
+    if (pathname.startsWith("/admin/ads")) return "Ads"
+    if (pathname.startsWith("/admin/users")) return "Users"
+    if (pathname.startsWith("/admin/payments")) return "Payments"
+    if (pathname.startsWith("/admin/reports")) return "Reports"
+    if (pathname.startsWith("/admin/settings")) return "Settings"
+    if (pathname.startsWith("/admin/data-requests")) return "Data Requests"
+    return "Admin"
   }
 
   return (
@@ -38,7 +50,7 @@ export default function AdminHeader({ activeTab, setSidebarOpen, setActiveTab })
           <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 rounded-md hover:bg-gray-100">
             <Menu className="w-5 h-5" />
           </button>
-          <h1 className="text-2xl font-bold text-gray-900 capitalize">{activeTab}</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{getPageTitle()}</h1>
         </div>
 
         <div className="flex items-center space-x-4">
@@ -82,10 +94,12 @@ export default function AdminHeader({ activeTab, setSidebarOpen, setActiveTab })
                 </p>
               </div>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleProfileClick} className="cursor-pointer">
-                <User className="w-4 h-4 mr-2" />
-                View Profile
-              </DropdownMenuItem>
+              <Link href="/admin/profile">
+                <DropdownMenuItem className="cursor-pointer">
+                  <User className="w-4 h-4 mr-2" />
+                  View Profile
+                </DropdownMenuItem>
+              </Link>
               <DropdownMenuItem className="cursor-pointer">
                 <Settings className="w-4 h-4 mr-2" />
                 Settings

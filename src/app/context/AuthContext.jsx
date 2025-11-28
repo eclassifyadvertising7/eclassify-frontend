@@ -12,9 +12,9 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const router = useRouter()
 
-  // Load user from localStorage on mount and validate token
+  // Load user from localStorage on mount
   useEffect(() => {
-    const loadUser = async () => {
+    const loadUser = () => {
       try {
         const storedUser = authService.getCurrentUser()
         const isAuth = authService.isAuthenticated()
@@ -22,23 +22,6 @@ export const AuthProvider = ({ children }) => {
         if (storedUser && isAuth) {
           setUser(storedUser)
           setIsAuthenticated(true)
-          
-          // Validate token by fetching fresh profile data
-          try {
-            const response = await authService.getProfile()
-            if (response.success && response.data) {
-              setUser(response.data)
-              localStorage.setItem('user', JSON.stringify(response.data))
-            }
-          } catch (error) {
-            // If profile fetch fails with 401, token is invalid
-            if (error.status === 401) {
-              console.log("Token invalid, logging out")
-              await authService.logout()
-              setUser(null)
-              setIsAuthenticated(false)
-            }
-          }
         }
       } catch (error) {
         console.error("Error loading user:", error)
@@ -92,10 +75,18 @@ export const AuthProvider = ({ children }) => {
 
   // Logout function
   const logout = async () => {
-    await authService.logout()
+    // Clear state immediately before API call
     setUser(null)
     setIsAuthenticated(false)
-    router.push("/sign-in")
+    
+    try {
+      await authService.logout()
+    } catch (error) {
+      console.error("Logout error:", error)
+    }
+    
+    // Use replace to avoid back button issues
+    router.replace("/sign-in")
   }
 
   // Update user in context

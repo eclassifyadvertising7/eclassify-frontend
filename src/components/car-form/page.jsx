@@ -97,6 +97,7 @@ export default function CarForm() {
     description: "",
     features: [],
     images: [],
+    coverPhotoIndex: 0,
   })
 
   useEffect(() => {
@@ -174,10 +175,28 @@ export default function CarForm() {
   }
 
   const handleRemoveImage = (index) => {
-    setFormData((prev) => ({
-      ...prev,
-      images: prev.images.filter((_, i) => i !== index),
-    }))
+    setFormData((prev) => {
+      const newImages = prev.images.filter((_, i) => i !== index)
+      let newCoverPhotoIndex = prev.coverPhotoIndex
+      
+      // If removing the cover photo, set first image as cover
+      if (index === prev.coverPhotoIndex) {
+        newCoverPhotoIndex = 0
+      } else if (index < prev.coverPhotoIndex) {
+        // Adjust cover photo index if removing an image before it
+        newCoverPhotoIndex = prev.coverPhotoIndex - 1
+      }
+      
+      return {
+        ...prev,
+        images: newImages,
+        coverPhotoIndex: newImages.length > 0 ? newCoverPhotoIndex : 0,
+      }
+    })
+  }
+
+  const handleSetCoverPhoto = (index) => {
+    setFormData((prev) => ({ ...prev, coverPhotoIndex: index }))
   }
 
   const handleInputChange = (field, value) => {
@@ -221,9 +240,7 @@ export default function CarForm() {
   }
 
   const nextStep = () => {
-    if (validateStep(currentStep)) {
-      setCurrentStep((prev) => Math.min(prev + 1, STEPS.length))
-    }
+    setCurrentStep((prev) => Math.min(prev + 1, STEPS.length))
   }
 
   const prevStep = () => {
@@ -338,8 +355,12 @@ export default function CarForm() {
       const listingId = createResponse.data.id
 
       const mediaFormData = new FormData()
-      formData.images.forEach((file) => {
+      formData.images.forEach((file, index) => {
         mediaFormData.append("media", file)
+        // Mark the cover photo with is_primary flag
+        if (index === formData.coverPhotoIndex) {
+          mediaFormData.append("is_primary", index)
+        }
       })
 
       await listingService.uploadMedia(listingId, mediaFormData)
@@ -417,10 +438,18 @@ export default function CarForm() {
                 <div className="p-2 bg-primary/10 rounded-lg">
                   <Car className="h-6 w-6 text-primary" />
                 </div>
-                <div>
+                <div className="flex-1">
                   <CardTitle>Basic Information</CardTitle>
                   <p className="text-sm text-muted-foreground mt-1">Select your car's brand, model, and variant</p>
                 </div>
+              </div>
+              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  <span className="font-medium">Can't find your car?</span> No worries! 
+                  <a href="/request-data" className="text-primary hover:underline font-medium ml-1">
+                    Request it here
+                  </a> and we'll add it to our database.
+                </p>
               </div>
             </CardHeader>
             <CardContent className="pt-6 space-y-6">
@@ -890,7 +919,6 @@ export default function CarForm() {
                         : "border-border hover:border-primary/50 hover:bg-muted/50"
                       }
                     `}
-                    onClick={() => handleFeatureChange(feature, !formData.features.includes(feature))}
                   >
                     <Checkbox
                       id={feature}
@@ -975,7 +1003,9 @@ export default function CarForm() {
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {formData.images.map((file, index) => (
                       <div key={index} className="relative group">
-                        <div className="aspect-square rounded-lg overflow-hidden border-2 border-border">
+                        <div className={`aspect-square rounded-lg overflow-hidden border-2 transition-all ${
+                          index === formData.coverPhotoIndex ? "border-primary ring-2 ring-primary/20" : "border-border"
+                        }`}>
                           <img
                             src={URL.createObjectURL(file)}
                             alt={`preview-${index}`}
@@ -985,16 +1015,26 @@ export default function CarForm() {
                         <button
                           type="button"
                           onClick={() => handleRemoveImage(index)}
-                          className="absolute -top-2 -right-2 bg-destructive text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg hover:scale-110"
+                          className="absolute -top-2 -right-2 bg-destructive text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg hover:scale-110 z-10"
                         >
                           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                           </svg>
                         </button>
-                        {index === 0 && (
+                        {index === formData.coverPhotoIndex ? (
                           <Badge className="absolute bottom-2 left-2 bg-primary">
                             Cover Photo
                           </Badge>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleSetCoverPhoto(index)}
+                            className="absolute bottom-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <Badge variant="outline" className="bg-white/90 hover:bg-primary hover:text-white cursor-pointer">
+                              Set as Cover
+                            </Badge>
+                          </button>
                         )}
                       </div>
                     ))}
@@ -1018,15 +1058,17 @@ export default function CarForm() {
             Previous
           </Button>
 
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleSaveDraft}
-            disabled={submitting || savingDraft}
-            className="flex items-center gap-2"
-          >
-            {savingDraft ? "Saving..." : "Save as Draft"}
-          </Button>
+          {currentStep >= 4 && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleSaveDraft}
+              disabled={submitting || savingDraft}
+              className="flex items-center gap-2 mx-auto"
+            >
+              {savingDraft ? "Saving..." : "Save as Draft"}
+            </Button>
+          )}
 
           {currentStep < STEPS.length ? (
             <Button
