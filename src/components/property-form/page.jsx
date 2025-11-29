@@ -260,7 +260,7 @@ export default function PropertyForm() {
       
       if (response.success) {
         toast.success("Listing saved as draft")
-        router.push("/profile/listings")
+        router.push("/my-listings")
       }
     } catch (error) {
       console.error("Error saving draft:", error)
@@ -336,7 +336,7 @@ export default function PropertyForm() {
       await listingService.submitForApproval(listingId)
 
       toast.success("Listing submitted successfully! Awaiting admin approval.")
-      router.push("/profile/listings")
+      router.push("/my-listings")
     } catch (error) {
       console.error("Error submitting listing:", error)
       toast.error(error.message || "Failed to submit listing")

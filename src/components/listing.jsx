@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react"
 import { Heart } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 import { getHomepageListings } from "@/app/services/api/publicListingsService"
 
 export default function CarListings() {
@@ -130,11 +131,15 @@ export default function CarListings() {
               key={listing.id}
               className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden"
             >
-              <div className="relative">
-                <img 
+              <div className="relative h-32 md:h-48">
+                <Image 
                   src={getImageUrl(listing)} 
                   alt={listing.title} 
-                  className="w-full h-32 md:h-48 object-cover" 
+                  fill
+                  className="object-cover" 
+                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                  unoptimized
+
                 />
                 {listing.isFeatured && (
                   <div className="absolute top-3 left-3 bg-cyan-500 text-white px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1">
