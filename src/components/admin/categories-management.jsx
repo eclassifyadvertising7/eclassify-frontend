@@ -3,6 +3,8 @@ import { useState, useEffect } from "react"
 import { Plus, Search, Eye, Edit, Trash2, Image as ImageIcon, X } from "lucide-react"
 import { categoryService } from "@/app/services"
 import { toast } from "sonner"
+import Tooltip from "@/components/ui/tooltip"
+import ConfirmModal from "@/components/ui/confirm-modal"
 
 export default function CategoriesManagement() {
   const [categories, setCategories] = useState([])
@@ -24,6 +26,7 @@ export default function CategoriesManagement() {
   const [iconPreview, setIconPreview] = useState(null)
   const [imagePreview, setImagePreview] = useState(null)
   const [submitting, setSubmitting] = useState(false)
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, categoryId: null, categoryName: '' })
 
   useEffect(() => {
     fetchCategories()
@@ -173,11 +176,9 @@ export default function CategoriesManagement() {
     }
   }
 
-  const handleDelete = async (id) => {
-    if (!confirm("Are you sure you want to delete this category?")) return
-
+  const handleDelete = async () => {
     try {
-      const response = await categoryService.deleteCategory(id)
+      const response = await categoryService.deleteCategory(deleteModal.categoryId)
       if (response.success) {
         toast.success("Category deleted successfully")
         fetchCategories()
@@ -303,24 +304,30 @@ export default function CategoriesManagement() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">
-                        <button
-                          onClick={() => handleOpenModal("view", category)}
-                          className="text-blue-600 hover:text-blue-900"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleOpenModal("edit", category)}
-                          className="text-green-600 hover:text-green-900"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(category.id)}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <Tooltip content="View Details" position="top">
+                          <button
+                            onClick={() => handleOpenModal("view", category)}
+                            className="text-blue-600 hover:text-blue-900 cursor-pointer transition-colors"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                        </Tooltip>
+                        <Tooltip content="Edit Category" position="top">
+                          <button
+                            onClick={() => handleOpenModal("edit", category)}
+                            className="text-green-600 hover:text-green-900 cursor-pointer transition-colors"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                        </Tooltip>
+                        <Tooltip content="Delete Category" position="top">
+                          <button
+                            onClick={() => setDeleteModal({ isOpen: true, categoryId: category.id, categoryName: category.name })}
+                            className="text-red-600 hover:text-red-900 cursor-pointer transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </Tooltip>
                       </div>
                     </td>
                   </tr>
@@ -333,7 +340,7 @@ export default function CategoriesManagement() {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-gray-200 bg-opacity-50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b">
               <h3 className="text-xl font-bold text-gray-900">
@@ -471,6 +478,18 @@ export default function CategoriesManagement() {
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal({ isOpen: false, categoryId: null, categoryName: '' })}
+        onConfirm={handleDelete}
+        title="Delete Category"
+        message={`Are you sure you want to delete "${deleteModal.categoryName}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+      />
     </div>
   )
 }

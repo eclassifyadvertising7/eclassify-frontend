@@ -1,13 +1,17 @@
 "use client"
 import { useState, useEffect } from "react"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { Heart, Phone, MessageCircle, Star, Eye, Fuel, Users, Palette, Settings, Zap } from "lucide-react"
 import Header from "@/components/Header"
 import FooterSection from "@/components/Footer"
 import { getListingBySlug, incrementListingView } from "@/app/services/api/publicListingsService"
+import { createOrGetChatRoom } from "@/app/services/api/chatService"
+import { toast } from "sonner"
+import { getPostedByTypeBadge } from "@/lib/utils"
 
 export default function ProductDetails() {
   const params = useParams()
+  const router = useRouter()
   const slug = params.slug
 
   const [listing, setListing] = useState(null)
@@ -16,6 +20,7 @@ export default function ProductDetails() {
   const [selectedImage, setSelectedImage] = useState(0)
   const [isFavorite, setIsFavorite] = useState(false)
   const [message, setMessage] = useState("")
+  const [creatingChat, setCreatingChat] = useState(false)
 
   useEffect(() => {
     if (slug) {
@@ -61,6 +66,49 @@ export default function ProductDetails() {
       day: 'numeric'
     })
   }
+
+  const handleChatClick = async () => {
+    // Check if user is logged in
+    const user = JSON.parse(localStorage.getItem('user') || '{}')
+    if (!user.id) {
+      toast.error('Please login to chat with seller')
+      router.push('/sign-in')
+      return
+    }
+
+    // Check if user is trying to chat with their own listing
+    if (listing.userId === user.id) {
+      toast.error('You cannot chat on your own listing')
+      return
+    }
+
+    try {
+      setCreatingChat(true)
+      const response = await createOrGetChatRoom(listing.id)
+      
+      if (response.success) {
+        // Navigate to chats page with the room ID
+        router.push(`/chats?room=${response.data.roomId}`)
+      }
+    } catch (error) {
+      toast.error(error.message || 'Failed to start chat')
+    } finally {
+      setCreatingChat(false)
+    }
+  }
+
+  // Check if current user owns this listing
+  const getCurrentUser = () => {
+    if (typeof window === 'undefined') return null
+    try {
+      return JSON.parse(localStorage.getItem('user') || '{}')
+    } catch {
+      return null
+    }
+  }
+  
+  const currentUser = getCurrentUser()
+  const isOwnListing = currentUser?.id && listing?.userId === currentUser.id
 
   if (loading) {
     return (
@@ -252,13 +300,20 @@ export default function ProductDetails() {
               {listing.priceNegotiable && (
                 <p className="text-sm text-gray-500 mb-2">Price negotiable</p>
               )}
-              <p className="text-sm text-gray-500 mb-4">📅 Posted on: {formatDate(listing.publishedAt || listing.createdAt)}</p>
+              <p className="text-sm text-gray-500 mb-4">📅 Posted on: {formatDate(listing.publishedAt || listing.published_at || listing.createdAt || listing.created_at)}</p>
 
-              {listing.isFeatured && (
-                <div className="inline-block bg-orange-100 text-orange-600 px-3 py-1 rounded-full text-sm font-medium mb-4">
-                  Featured
-                </div>
-              )}
+              <div className="flex flex-wrap gap-2 mb-4">
+                {listing.isFeatured && (
+                  <span className="inline-block bg-orange-100 text-orange-600 px-3 py-1 rounded-full text-sm font-medium">
+                    Featured
+                  </span>
+                )}
+                {listing.postedByType && (
+                  <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getPostedByTypeBadge(listing.postedByType).className}`}>
+                    {getPostedByTypeBadge(listing.postedByType).icon} {getPostedByTypeBadge(listing.postedByType).label}
+                  </span>
+                )}
+              </div>
 
               {/* Seller Info */}
               {listing.user && (
@@ -277,11 +332,20 @@ export default function ProductDetails() {
 
                   {/* Action Buttons */}
                   <div className="grid grid-cols-2 gap-3 mb-4">
-                    <button className="flex items-center justify-center gap-2 bg-gray-900 text-white px-4 py-3 rounded-lg hover:bg-gray-800 transition-colors">
+                    <button 
+                      onClick={handleChatClick}
+                      disabled={isOwnListing || creatingChat}
+                      className="flex items-center justify-center gap-2 bg-gray-900 text-white px-4 py-3 rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title={isOwnListing ? 'Cannot chat on your own listing' : 'Chat with seller'}
+                    >
                       <MessageCircle className="w-4 h-4" />
-                      Chat
+                      {creatingChat ? 'Loading...' : 'Chat'}
                     </button>
-                    <button className="flex items-center justify-center gap-2 bg-cyan-600 text-white px-4 py-3 rounded-lg hover:bg-cyan-700 transition-colors">
+                    <button 
+                      disabled={isOwnListing}
+                      className="flex items-center justify-center gap-2 bg-cyan-600 text-white px-4 py-3 rounded-lg hover:bg-cyan-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title={isOwnListing ? 'Cannot call yourself' : 'Call seller'}
+                    >
                       <Phone className="w-4 h-4" />
                       Call
                     </button>
@@ -302,6 +366,12 @@ export default function ProductDetails() {
                   <span className="text-gray-600">Category</span>
                   <span className="font-medium">{listing.category?.name}</span>
                 </div>
+                {listing.postedByType && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Posted By</span>
+                    <span className="font-medium capitalize">{listing.postedByType}</span>
+                  </div>
+                )}
               </div>
             </div>
 

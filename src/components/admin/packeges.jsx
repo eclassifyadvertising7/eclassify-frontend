@@ -5,12 +5,15 @@ import { useRouter } from "next/navigation"
 import { PlusIcon, Edit2Icon, EyeIcon, Trash2Icon, ToggleLeftIcon, ToggleRightIcon, EyeOffIcon } from "lucide-react"
 import subscriptionService from "@/app/services/api/subscriptionService"
 import { toast } from "sonner"
+import Tooltip from "@/components/ui/tooltip"
+import ConfirmModal from "@/components/ui/confirm-modal"
 
 export default function SubscriptionPlans() {
   const router = useRouter()
   const [plans, setPlans] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all') // all, active, inactive
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, planId: null, planName: '' })
 
   useEffect(() => {
     fetchPlans()
@@ -58,11 +61,9 @@ export default function SubscriptionPlans() {
     }
   }
 
-  const handleDelete = async (planId) => {
-    if (!confirm('Are you sure you want to delete this plan?')) return
-    
+  const handleDelete = async () => {
     try {
-      const response = await subscriptionService.deletePlan(planId)
+      const response = await subscriptionService.deletePlan(deleteModal.planId)
       if (response.success) {
         toast.success('Plan deleted successfully')
         fetchPlans()
@@ -204,47 +205,64 @@ export default function SubscriptionPlans() {
                   </div>
                 </div>
                 <div className="flex items-center space-x-2 ml-4">
-                  <button
-                    onClick={() => router.push(`/admin/subscriptions/${plan.id}`)}
-                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                    title="View Details"
-                  >
-                    <EyeIcon className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={() => router.push(`/admin/subscriptions/${plan.id}/edit`)}
-                    className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                    title="Edit Plan"
-                  >
-                    <Edit2Icon className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={() => handleToggleStatus(plan.id, plan.isActive)}
-                    className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
-                    title={plan.isActive ? 'Deactivate' : 'Activate'}
-                  >
-                    {plan.isActive ? <ToggleRightIcon className="w-5 h-5" /> : <ToggleLeftIcon className="w-5 h-5" />}
-                  </button>
-                  <button
-                    onClick={() => handleToggleVisibility(plan.id, plan.isPublic)}
-                    className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-                    title={plan.isPublic ? 'Make Private' : 'Make Public'}
-                  >
-                    {plan.isPublic ? <EyeIcon className="w-5 h-5" /> : <EyeOffIcon className="w-5 h-5" />}
-                  </button>
-                  <button
-                    onClick={() => handleDelete(plan.id)}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    title="Delete Plan"
-                  >
-                    <Trash2Icon className="w-5 h-5" />
-                  </button>
+                  <Tooltip content="View Details" position="top">
+                    <button
+                      onClick={() => router.push(`/admin/subscriptions/${plan.id}`)}
+                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                    >
+                      <EyeIcon className="w-5 h-5" />
+                    </button>
+                  </Tooltip>
+                  <Tooltip content="Edit Plan" position="top">
+                    <button
+                      onClick={() => router.push(`/admin/subscriptions/${plan.id}/edit`)}
+                      className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors cursor-pointer"
+                    >
+                      <Edit2Icon className="w-5 h-5" />
+                    </button>
+                  </Tooltip>
+                  <Tooltip content={plan.isActive ? 'Deactivate Plan' : 'Activate Plan'} position="top">
+                    <button
+                      onClick={() => handleToggleStatus(plan.id, plan.isActive)}
+                      className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors cursor-pointer"
+                    >
+                      {plan.isActive ? <ToggleRightIcon className="w-5 h-5" /> : <ToggleLeftIcon className="w-5 h-5" />}
+                    </button>
+                  </Tooltip>
+                  <Tooltip content={plan.isPublic ? 'Make Private' : 'Make Public'} position="top">
+                    <button
+                      onClick={() => handleToggleVisibility(plan.id, plan.isPublic)}
+                      className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors cursor-pointer"
+                    >
+                      {plan.isPublic ? <EyeIcon className="w-5 h-5" /> : <EyeOffIcon className="w-5 h-5" />}
+                    </button>
+                  </Tooltip>
+                  <Tooltip content="Delete Plan" position="top">
+                    <button
+                      onClick={() => setDeleteModal({ isOpen: true, planId: plan.id, planName: plan.name })}
+                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                    >
+                      <Trash2Icon className="w-5 h-5" />
+                    </button>
+                  </Tooltip>
                 </div>
               </div>
             </div>
           ))}
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal({ isOpen: false, planId: null, planName: '' })}
+        onConfirm={handleDelete}
+        title="Delete Subscription Plan"
+        message={`Are you sure you want to delete "${deleteModal.planName}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+      />
     </div>
   )
 }

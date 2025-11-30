@@ -88,7 +88,7 @@ export default function ProfilePage() {
             {/* Profile Info */}
             <div className="flex items-center gap-4">
               <Avatar className="h-24 w-24 md:h-32 md:w-32">
-                <AvatarImage src={user.profile_image || "/placeholder.svg"} alt={user.fullName} />
+                <AvatarImage src={user.profile?.profilePhoto || "/placeholder.svg"} alt={user.fullName} />
                 <AvatarFallback className="text-2xl">{user.fullName?.charAt(0) || "U"}</AvatarFallback>
               </Avatar>
 

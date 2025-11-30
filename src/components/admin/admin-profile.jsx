@@ -148,7 +148,7 @@ export default function AdminProfile() {
             {/* Avatar */}
             <div className="relative">
               <Avatar className="h-24 w-24 md:h-32 md:w-32">
-                <AvatarImage src={user?.profile_image} alt={user?.fullName} />
+                <AvatarImage src={user?.profile?.profilePhoto} alt={user?.fullName} />
                 <AvatarFallback className="text-3xl bg-primary text-white">
                   {user?.fullName?.charAt(0) || "A"}
                 </AvatarFallback>

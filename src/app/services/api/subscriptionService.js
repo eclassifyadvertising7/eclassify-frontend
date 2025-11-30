@@ -1,85 +1,166 @@
+import httpClient from "@/app/services/httpClient";
+
 /**
  * Subscription Service
- * Handles subscription plan management (Admin) and user subscriptions
+ * Handles all subscription/pricing plan related API calls
  */
 
-import httpClient from '../httpClient';
+// ============================================
+// END USER ENDPOINTS
+// ============================================
 
-export const subscriptionService = {
-  // ============ ADMIN - Plan Management ============
-  
-  // Get all subscription plans (admin)
-  getAllPlans: async (filters = {}) => {
+/**
+ * Get all available subscription plans (End User)
+ * @returns {Promise<Array>} List of active subscription plans
+ */
+export const getPlans = async () => {
+  try {
+    const response = await httpClient.get("/end-user/subscriptions/plans");
+    return response.data || [];
+  } catch (error) {
+    console.error("Error fetching subscription plans:", error);
+    throw error;
+  }
+};
+
+/**
+ * Get details of a specific plan (End User)
+ * @param {number|string} planId - The plan ID
+ * @returns {Promise<Object>} Plan details
+ */
+export const getPlanDetails = async (planId) => {
+  try {
+    const response = await httpClient.get(`/end-user/subscriptions/plans/${planId}`);
+    return response.data || null;
+  } catch (error) {
+    console.error(`Error fetching plan details for ID ${planId}:`, error);
+    throw error;
+  }
+};
+
+// ============================================
+// ADMIN ENDPOINTS
+// ============================================
+
+/**
+ * Get all subscription plans (Admin)
+ * @param {Object} filters - Optional filters (isActive, isPublic, planCode)
+ * @returns {Promise<Object>} Response with plans data
+ */
+export const getAllPlans = async (filters = {}) => {
+  try {
     const params = new URLSearchParams();
-    if (filters.isActive !== undefined) params.append('isActive', filters.isActive);
-    if (filters.isPublic !== undefined) params.append('isPublic', filters.isPublic);
-    if (filters.planCode) params.append('planCode', filters.planCode);
+    if (filters.isActive !== undefined) params.append("isActive", filters.isActive);
+    if (filters.isPublic !== undefined) params.append("isPublic", filters.isPublic);
+    if (filters.planCode) params.append("planCode", filters.planCode);
     
-    const query = params.toString();
-    return httpClient.get(`/panel/subscription-plans${query ? `?${query}` : ''}`);
-  },
+    const endpoint = `/panel/subscription-plans${params.toString() ? `?${params.toString()}` : ""}`;
+    return await httpClient.get(endpoint);
+  } catch (error) {
+    console.error("Error fetching all plans:", error);
+    throw error;
+  }
+};
 
-  // Get plan by ID (admin)
-  getPlanById: async (planId) => {
-    return httpClient.get(`/panel/subscription-plans/${planId}`);
-  },
+/**
+ * Get plan by ID (Admin)
+ * @param {number|string} planId - The plan ID
+ * @returns {Promise<Object>} Response with plan details
+ */
+export const getPlanById = async (planId) => {
+  try {
+    return await httpClient.get(`/panel/subscription-plans/${planId}`);
+  } catch (error) {
+    console.error(`Error fetching plan by ID ${planId}:`, error);
+    throw error;
+  }
+};
 
-  // Create subscription plan (admin)
-  createPlan: async (planData) => {
-    return httpClient.post('/panel/subscription-plans', planData);
-  },
+/**
+ * Create subscription plan (Admin)
+ * @param {Object} planData - Plan data
+ * @returns {Promise<Object>} Response with created plan
+ */
+export const createPlan = async (planData) => {
+  try {
+    return await httpClient.post("/panel/subscription-plans", planData);
+  } catch (error) {
+    console.error("Error creating plan:", error);
+    throw error;
+  }
+};
 
-  // Update subscription plan (admin)
-  updatePlan: async (planId, planData) => {
-    return httpClient.put(`/panel/subscription-plans/${planId}`, planData);
-  },
+/**
+ * Update subscription plan (Admin)
+ * @param {number|string} planId - The plan ID
+ * @param {Object} planData - Updated plan data
+ * @returns {Promise<Object>} Response with updated plan
+ */
+export const updatePlan = async (planId, planData) => {
+  try {
+    return await httpClient.put(`/panel/subscription-plans/${planId}`, planData);
+  } catch (error) {
+    console.error(`Error updating plan ${planId}:`, error);
+    throw error;
+  }
+};
 
-  // Delete subscription plan (admin)
-  deletePlan: async (planId) => {
-    return httpClient.delete(`/panel/subscription-plans/${planId}`);
-  },
+/**
+ * Delete subscription plan (Admin)
+ * @param {number|string} planId - The plan ID
+ * @returns {Promise<Object>} Response
+ */
+export const deletePlan = async (planId) => {
+  try {
+    return await httpClient.delete(`/panel/subscription-plans/${planId}`);
+  } catch (error) {
+    console.error(`Error deleting plan ${planId}:`, error);
+    throw error;
+  }
+};
 
-  // Update plan status (admin)
-  updatePlanStatus: async (planId, isActive) => {
-    return httpClient.patch(`/panel/subscription-plans/status/${planId}`, { isActive });
-  },
+/**
+ * Update plan status (Admin)
+ * @param {number|string} planId - The plan ID
+ * @param {boolean} isActive - Active status
+ * @returns {Promise<Object>} Response
+ */
+export const updatePlanStatus = async (planId, isActive) => {
+  try {
+    return await httpClient.patch(`/panel/subscription-plans/status/${planId}`, { isActive });
+  } catch (error) {
+    console.error(`Error updating plan status ${planId}:`, error);
+    throw error;
+  }
+};
 
-  // Update plan visibility (admin)
-  updatePlanVisibility: async (planId, isPublic) => {
-    return httpClient.patch(`/panel/subscription-plans/visibility/${planId}`, { isPublic });
-  },
+/**
+ * Update plan visibility (Admin)
+ * @param {number|string} planId - The plan ID
+ * @param {boolean} isPublic - Public visibility
+ * @returns {Promise<Object>} Response
+ */
+export const updatePlanVisibility = async (planId, isPublic) => {
+  try {
+    return await httpClient.patch(`/panel/subscription-plans/visibility/${planId}`, { isPublic });
+  } catch (error) {
+    console.error(`Error updating plan visibility ${planId}:`, error);
+    throw error;
+  }
+};
 
-  // ============ END USER - Subscriptions ============
-  
-  // Get available plans (end user)
-  getAvailablePlans: async () => {
-    return httpClient.get('/end-user/subscriptions/plans');
-  },
-
-  // Get plan details (end user)
-  getPlanDetails: async (planId) => {
-    return httpClient.get(`/end-user/subscriptions/plans/${planId}`);
-  },
-
-  // Subscribe to plan (end user)
-  subscribeToPlan: async (subscriptionData) => {
-    return httpClient.post('/end-user/subscriptions', subscriptionData);
-  },
-
-  // Get active subscription (end user)
-  getActiveSubscription: async () => {
-    return httpClient.get('/end-user/subscriptions/active');
-  },
-
-  // Get subscription history (end user)
-  getSubscriptionHistory: async (page = 1, limit = 10) => {
-    return httpClient.get(`/end-user/subscriptions/history?page=${page}&limit=${limit}`);
-  },
-
-  // Cancel subscription (end user)
-  cancelSubscription: async (subscriptionId, reason) => {
-    return httpClient.post(`/end-user/subscriptions/${subscriptionId}/cancel`, { reason });
-  },
+const subscriptionService = {
+  // End User
+  getPlans,
+  getPlanDetails,
+  // Admin
+  getAllPlans,
+  getPlanById,
+  createPlan,
+  updatePlan,
+  deletePlan,
+  updatePlanStatus,
+  updatePlanVisibility,
 };
 
 export default subscriptionService;
