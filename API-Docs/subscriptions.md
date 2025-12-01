@@ -34,7 +34,7 @@ Content-Type: application/json
 {
   "planCode": "premium",
   "name": "Premium Plan",
-  "slug": "premium",
+  "slug": "premium",  // Optional - auto-generated from name if not provided
   "description": "Full-featured premium plan with all benefits",
   "shortDescription": "Best value for serious sellers",
   "basePrice": 999.00,
@@ -148,7 +148,7 @@ Update a subscription plan. Automatically creates new version if critical fields
 - Featured: `maxFeaturedListings`, `maxBoostedListings`, `maxSpotlightListings`, `maxHomepageListings`, `featuredDays`, `boostedDays`, `spotlightDays`
 - Management: `listingDurationDays`, `autoRenewal`, `maxRenewals`, `supportLevel`
 
-**Request Body (Example - Price Change):**
+**Request Body (Example - Price Change - Critical Field):**
 ```json
 {
   "finalPrice": 899.00,
@@ -166,13 +166,22 @@ Update a subscription plan. Automatically creates new version if critical fields
     "id": 4,
     "planCode": "premium",
     "version": 2,
-    "slug": "premium-v2",
+    "slug": "premium-v2",  // Auto-generated: planCode-v{version}
     "finalPrice": "899.00",
     "isActive": true,
     "isPublic": true,
     "deprecatedAt": null,
     "replacedByPlanId": null
   }
+}
+```
+
+**Request Body (Example - Non-Critical Fields):**
+```json
+{
+  "name": "Premium Plan - Updated",
+  "description": "Updated description",
+  "tagline": "Best Value"
 }
 ```
 
@@ -185,6 +194,7 @@ Update a subscription plan. Automatically creates new version if critical fields
     "id": 3,
     "planCode": "premium",
     "version": 1,
+    "slug": "premium",  // Slug unchanged
     "name": "Premium Plan - Updated",
     "description": "Updated description"
   }
@@ -786,12 +796,17 @@ Cancel the user's active subscription.
 
 1. **Auto-Versioning**: When updating a plan, if any of the 20 critical fields are changed, a new version is automatically created.
 
-2. **Immutable Snapshots**: User subscriptions store a complete snapshot of plan benefits at purchase time. Never query the plan table for user benefits.
+2. **Auto-Generated Slugs**: 
+   - On **create**: Slug auto-generated from name if not provided
+   - On **update (non-critical)**: Slug remains unchanged (cannot be modified)
+   - On **version creation**: Slug auto-generated as `{planCode}-v{version}` (e.g., `premium-v2`)
 
-3. **Deprecated Plans**: Old plan versions remain active but hidden (`isActive: true`, `isPublic: false`) so existing subscribers can still access their benefits.
+3. **Immutable Snapshots**: User subscriptions store a complete snapshot of plan benefits at purchase time. Never query the plan table for user benefits.
 
-4. **Upgrade Detection**: When fetching active subscription, the API checks if the plan is deprecated and suggests the replacement plan if available.
+4. **Deprecated Plans**: Old plan versions remain active but hidden (`isActive: true`, `isPublic: false`) so existing subscribers can still access their benefits.
 
-5. **Single Active Subscription**: Users can only have one active subscription at a time.
+5. **Upgrade Detection**: When fetching active subscription, the API checks if the plan is deprecated and suggests the replacement plan if available.
 
-6. **Explicit State Management**: Toggle endpoints (status, visibility) require explicit boolean values in the request body.
+6. **Single Active Subscription**: Users can only have one active subscription at a time.
+
+7. **Explicit State Management**: Toggle endpoints (status, visibility) require explicit boolean values in the request body.

@@ -167,7 +167,7 @@ export default function Header() {
             </div>
           </div>
                {/* Category Navigation */}
-      <div className="hidden lg:block border-b border-gray-200">
+      {/* <div className="hidden lg:block border-b border-gray-200">
         <div className="container mx-auto px-4">
           <nav className="flex items-center space-x-8 h-12 overflow-x-auto">
             {mainCategories.map((category) => (
@@ -181,7 +181,7 @@ export default function Header() {
             ))}
           </nav>
         </div>
-      </div>
+      </div> */}
         </div>
         
       </div>

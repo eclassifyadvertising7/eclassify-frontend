@@ -24,6 +24,7 @@ import {
   Plus
 } from "lucide-react"
 import { toast } from "sonner"
+import { getPostedByTypeBadge } from "@/lib/utils"
 
 export default function MyListingsPage() {
   const router = useRouter()
@@ -311,15 +312,22 @@ export default function MyListingsPage() {
                       <p className="text-2xl font-bold text-primary mb-2">
                         {formatPrice(listing.price)}
                       </p>
-                      <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
+                      <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
                         <div className="flex items-center gap-1">
                           <Eye className="h-4 w-4" />
                           {listing.viewCount} views
                         </div>
                         <div>
-                          {formatDate(listing.createdAt)}
+                          {formatDate(listing.publishedAt || listing.published_at || listing.createdAt || listing.created_at)}
                         </div>
                       </div>
+                      {listing.postedByType && (
+                        <div className="mb-4">
+                          <span className={`inline-block text-xs px-2 py-1 rounded-full ${getPostedByTypeBadge(listing.postedByType).className}`}>
+                            {getPostedByTypeBadge(listing.postedByType).icon} {getPostedByTypeBadge(listing.postedByType).label}
+                          </span>
+                        </div>
+                      )}
 
                       {/* Actions */}
                       <div className="flex gap-2">

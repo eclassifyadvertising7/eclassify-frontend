@@ -4,6 +4,7 @@ import { Heart } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { getHomepageListings } from "@/app/services/api/publicListingsService"
+import { getPostedByTypeBadge } from "@/lib/utils"
 
 export default function CarListings() {
   const [listings, setListings] = useState([])
@@ -53,9 +54,9 @@ export default function CarListings() {
     const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24))
     
     if (diffInDays < 1) return "Today"
-    if (diffInDays < 30) return `${diffInDays}d`
-    if (diffInDays < 365) return `${Math.floor(diffInDays / 30)}mo`
-    return `${Math.floor(diffInDays / 365)}y`
+    if (diffInDays < 30) return `${diffInDays}d ago`
+    if (diffInDays < 365) return `${Math.floor(diffInDays / 30)}mo ago`
+    return `${Math.floor(diffInDays / 365)}y ago`
   }
 
   const getImageUrl = (listing) => {
@@ -167,13 +168,18 @@ export default function CarListings() {
                     {formatPrice(listing.price)}
                   </h3>
                   <span className="text-sm text-gray-500">
-                    {formatTimeAgo(listing.createdAt)}
+                    {formatTimeAgo(listing.publishedAt || listing.published_at || listing.createdAt || listing.created_at)}
                   </span>
                 </div>
                 <h4 className="text-sm md:text-lg font-semibold text-gray-800 mb-1">
                   {listing.title}
                 </h4>
-                <p className="text-sm text-gray-600">{getLocation(listing)}</p>
+                <p className="text-sm text-gray-600 mb-2">{getLocation(listing)}</p>
+                {listing.postedByType && (
+                  <span className={`inline-block text-xs px-2 py-1 rounded-full ${getPostedByTypeBadge(listing.postedByType).className}`}>
+                    {getPostedByTypeBadge(listing.postedByType).icon} {getPostedByTypeBadge(listing.postedByType).label}
+                  </span>
+                )}
               </div>
             </Link>
           ))}

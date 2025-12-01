@@ -3,6 +3,8 @@ import { useState, useEffect } from "react"
 import { Filter, Download, Eye, Check, X, Star, Trash2, Search, ChevronLeft, ChevronRight } from "lucide-react"
 import { listingAdminService } from "@/app/services/api/listingAdminService"
 import { toast } from "sonner"
+import Tooltip from "@/components/ui/tooltip"
+import ConfirmModal from "@/components/ui/confirm-modal"
 
 export default function AdsManagement() {
   const [listings, setListings] = useState([])
@@ -21,6 +23,7 @@ export default function AdsManagement() {
   const [showFeaturedModal, setShowFeaturedModal] = useState(false)
   const [rejectionReason, setRejectionReason] = useState('')
   const [featuredDays, setFeaturedDays] = useState(7)
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, listingId: null, listingTitle: '' })
 
   useEffect(() => {
     fetchListings()
@@ -95,10 +98,9 @@ export default function AdsManagement() {
     }
   }
 
-  const handleDelete = async (listingId) => {
-    if (!confirm('Are you sure you want to delete this listing?')) return
+  const handleDelete = async () => {
     try {
-      await listingAdminService.deleteListing(listingId)
+      await listingAdminService.deleteListing(deleteModal.listingId)
       toast.success('Listing deleted successfully')
       fetchListings()
       fetchStats()
@@ -253,7 +255,9 @@ export default function AdsManagement() {
                             <div className="text-sm font-medium text-gray-900 flex items-center gap-2">
                               {listing.title}
                               {listing.isFeatured && (
-                                <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                                <Tooltip content="Featured Listing" position="right">
+                                  <Star className="w-4 h-4 text-yellow-500 fill-yellow-500 cursor-pointer" />
+                                </Tooltip>
                               )}
                             </div>
                             <div className="text-sm text-gray-500">
@@ -287,44 +291,48 @@ export default function AdsManagement() {
                         <div className="flex space-x-2">
                           {listing.status === 'pending' && (
                             <>
-                              <button 
-                                onClick={() => handleApprove(listing.id)}
-                                className="text-green-600 hover:text-green-900"
-                                title="Approve"
-                              >
-                                <Check className="w-4 h-4" />
-                              </button>
-                              <button 
-                                onClick={() => {
-                                  setSelectedListing(listing)
-                                  setShowRejectModal(true)
-                                }}
-                                className="text-red-600 hover:text-red-900"
-                                title="Reject"
-                              >
-                                <X className="w-4 h-4" />
-                              </button>
+                              <Tooltip content="Approve Listing" position="top">
+                                <button 
+                                  onClick={() => handleApprove(listing.id)}
+                                  className="text-green-600 hover:text-green-900 cursor-pointer transition-colors"
+                                >
+                                  <Check className="w-4 h-4" />
+                                </button>
+                              </Tooltip>
+                              <Tooltip content="Reject Listing" position="top">
+                                <button 
+                                  onClick={() => {
+                                    setSelectedListing(listing)
+                                    setShowRejectModal(true)
+                                  }}
+                                  className="text-red-600 hover:text-red-900 cursor-pointer transition-colors"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </Tooltip>
                             </>
                           )}
                           {(listing.status === 'active' || listing.status === 'expired') && (
-                            <button 
-                              onClick={() => {
-                                setSelectedListing(listing)
-                                setShowFeaturedModal(true)
-                              }}
-                              className={listing.isFeatured ? "text-yellow-600 hover:text-yellow-900" : "text-gray-600 hover:text-gray-900"}
-                              title={listing.isFeatured ? "Remove Featured" : "Make Featured"}
-                            >
-                              <Star className={`w-4 h-4 ${listing.isFeatured ? 'fill-yellow-500' : ''}`} />
-                            </button>
+                            <Tooltip content={listing.isFeatured ? "Remove Featured" : "Make Featured"} position="top">
+                              <button 
+                                onClick={() => {
+                                  setSelectedListing(listing)
+                                  setShowFeaturedModal(true)
+                                }}
+                                className={`${listing.isFeatured ? "text-yellow-600 hover:text-yellow-900" : "text-gray-600 hover:text-gray-900"} cursor-pointer transition-colors`}
+                              >
+                                <Star className={`w-4 h-4 ${listing.isFeatured ? 'fill-yellow-500' : ''}`} />
+                              </button>
+                            </Tooltip>
                           )}
-                          <button 
-                            onClick={() => handleDelete(listing.id)}
-                            className="text-red-600 hover:text-red-900"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          <Tooltip content="Delete Listing" position="top">
+                            <button 
+                              onClick={() => setDeleteModal({ isOpen: true, listingId: listing.id, listingTitle: listing.title })}
+                              className="text-red-600 hover:text-red-900 cursor-pointer transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </Tooltip>
                         </div>
                       </td>
                     </tr>
@@ -366,7 +374,7 @@ export default function AdsManagement() {
 
       {/* Reject Modal */}
       {showRejectModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-gray-200 bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Reject Listing</h3>
             <p className="text-sm text-gray-600 mb-4">
@@ -403,7 +411,7 @@ export default function AdsManagement() {
 
       {/* Featured Modal */}
       {showFeaturedModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-gray-200 bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               {selectedListing.isFeatured ? 'Remove Featured Status' : 'Make Listing Featured'}
@@ -443,6 +451,18 @@ export default function AdsManagement() {
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal({ isOpen: false, listingId: null, listingTitle: '' })}
+        onConfirm={handleDelete}
+        title="Delete Listing"
+        message={`Are you sure you want to delete "${deleteModal.listingTitle}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+      />
     </div>
   )
 }

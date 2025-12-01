@@ -66,12 +66,14 @@ const UserHeader = () => {
             </Button>
 
             {/* Messages */}
-            <Button variant="ghost" className="relative">
-              <MessageCircle className="h-10 w-10" />
-              {/* <Badge className="absolute -top-1 text-[9px] right-1 h-4 w-4 rounded-full bg-blue-500 text-white  flex items-center justify-center p-0">
-                3
-              </Badge> */}
-            </Button>
+            <Link href="/chats">
+              <Button variant="ghost" className="relative">
+                <MessageCircle className="h-10 w-10" />
+                {/* <Badge className="absolute -top-1 text-[9px] right-1 h-4 w-4 rounded-full bg-blue-500 text-white  flex items-center justify-center p-0">
+                  3
+                </Badge> */}
+              </Button>
+            </Link>
 
             {/* Notifications */}
             <Button variant="ghost" className="relative">
@@ -83,8 +85,8 @@ const UserHeader = () => {
               <DropdownMenuTrigger asChild>
                 <div variant="ghost" className="flex items-center gap-2 p-2 bg-white cursor-pointer">
                   <div className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden">
-                    {user?.profile_image ? (
-                      <img src={user.profile_image} alt={user.fullName} className="w-full h-full object-cover" />
+                    {user?.profile?.profilePhoto ? (
+                      <img src={user.profile.profilePhoto} alt={user.fullName} className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full bg-primary flex items-center justify-center text-white text-sm font-bold">
                         {user?.fullName?.charAt(0) || "U"}
@@ -99,8 +101,8 @@ const UserHeader = () => {
                 <div className="p-4 border-b">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                      {user?.profile_image ? (
-                        <img src={user.profile_image} alt={user.fullName} className="w-full h-full object-cover" />
+                      {user?.profile?.profilePhoto ? (
+                        <img src={user.profile.profilePhoto} alt={user.fullName} className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full bg-primary flex items-center justify-center text-white text-xl font-bold">
                           {user?.fullName?.charAt(0) || "U"}
@@ -142,10 +144,12 @@ const UserHeader = () => {
                     </DropdownMenuItem>
                   </Link>
 
-                  <DropdownMenuItem className="flex items-center gap-3 px-4 py-3">
-                    <MessageCircle className="h-5 w-5" />
-                    <span>Chat</span>
-                  </DropdownMenuItem>
+                  <Link href="/chats">
+                    <DropdownMenuItem className="flex items-center gap-3 px-4 py-3">
+                      <MessageCircle className="h-5 w-5" />
+                      <span>My Chats</span>
+                    </DropdownMenuItem>
+                  </Link>
 
                   <DropdownMenuItem className="flex items-center gap-3 px-4 py-3">
                     <Package className="h-5 w-5" />

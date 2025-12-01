@@ -70,8 +70,8 @@ export default function AdminHeader({ setSidebarOpen }) {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex items-center space-x-3 hover:bg-gray-50 rounded-lg p-2 transition-colors">
-                {user?.profile_image ? (
-                  <img src={user.profile_image} alt={user.fullName} className="w-8 h-8 rounded-full object-cover" />
+                {user?.profile?.profilePhoto ? (
+                  <img src={user.profile.profilePhoto} alt={user.fullName} className="w-8 h-8 rounded-full object-cover" />
                 ) : (
                   <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-sm font-bold">
                     {user?.fullName?.charAt(0) || "A"}
