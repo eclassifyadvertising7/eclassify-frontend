@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -15,7 +15,7 @@ import { getChatRooms, deleteChatRoom, blockUser, reportUser, requestContact } f
 import socketService from "@/app/services/socketService";
 import { toast } from "sonner";
 
-export default function ChatsPage() {
+function ChatsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [rooms, setRooms] = useState([]);
@@ -273,5 +273,17 @@ export default function ChatsPage() {
       </div>
       <Footer />
     </>
+  );
+}
+
+export default function ChatsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    }>
+      <ChatsContent />
+    </Suspense>
   );
 }
