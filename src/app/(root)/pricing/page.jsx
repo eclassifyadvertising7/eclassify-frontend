@@ -6,11 +6,13 @@ import Header from "@/components/Header"
 import { Splide, SplideSlide } from "@splidejs/react-splide"
 import "@splidejs/react-splide/css"
 import { subscriptionService } from "@/app/services/api"
+import ManualPaymentModal from "@/components/ManualPaymentModal"
 
 export default function PricingPlans() {
   const [plans, setPlans] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [paymentModal, setPaymentModal] = useState({ isOpen: false, plan: null })
 
   useEffect(() => {
     fetchPlans()
@@ -182,7 +184,10 @@ export default function PricingPlans() {
                       </div>
 
                       {/* Choose Plan Button */}
-                      <button className="w-full py-3 px-6 border-2 border-primary text-primary rounded-lg font-semibold hover:bg-primary hover:text-white transition-colors duration-300 flex items-center justify-center gap-2 mt-auto">
+                      <button 
+                        onClick={() => setPaymentModal({ isOpen: true, plan })}
+                        className="w-full py-3 px-6 border-2 border-primary text-primary rounded-lg font-semibold hover:bg-primary hover:text-white transition-colors duration-300 flex items-center justify-center gap-2 mt-auto"
+                      >
                         Choose Plan
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -251,6 +256,13 @@ export default function PricingPlans() {
         `}</style>
       </section>
       <FooterSection />
+      
+      {/* Manual Payment Modal */}
+      <ManualPaymentModal
+        isOpen={paymentModal.isOpen}
+        onClose={() => setPaymentModal({ isOpen: false, plan: null })}
+        plan={paymentModal.plan}
+      />
     </>
   )
 }

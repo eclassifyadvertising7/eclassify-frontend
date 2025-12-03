@@ -175,54 +175,72 @@ function ChatsContent() {
               {/* Left Sidebar - Rooms List */}
               <div className="w-80 border-r flex flex-col">
                 {/* Filters */}
-                <div className="p-4 border-b bg-gray-50">
-                  <div className="flex gap-2 mb-2">
+                <div className="border-b bg-white">
+                  {/* Main Tabs */}
+                  <div className="flex border-b">
                     <button
                       onClick={() => setFilters({ ...filters, main: 'all' })}
-                      className={`px-3 py-1 text-sm rounded ${
-                        filters.main === 'all' ? 'bg-blue-500 text-white' : 'bg-white border'
+                      className={`flex-1 px-4 py-3 text-sm font-medium transition-colors relative ${
+                        filters.main === 'all' 
+                          ? 'text-blue-600' 
+                          : 'text-gray-600 hover:text-gray-900'
                       }`}
                     >
                       All
+                      {filters.main === 'all' && (
+                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
+                      )}
                     </button>
                     <button
                       onClick={() => setFilters({ ...filters, main: 'buying' })}
-                      className={`px-3 py-1 text-sm rounded ${
-                        filters.main === 'buying' ? 'bg-blue-500 text-white' : 'bg-white border'
+                      className={`flex-1 px-4 py-3 text-sm font-medium transition-colors relative ${
+                        filters.main === 'buying' 
+                          ? 'text-blue-600' 
+                          : 'text-gray-600 hover:text-gray-900'
                       }`}
                     >
                       Buying
+                      {filters.main === 'buying' && (
+                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
+                      )}
                     </button>
                     <button
                       onClick={() => setFilters({ ...filters, main: 'selling' })}
-                      className={`px-3 py-1 text-sm rounded ${
-                        filters.main === 'selling' ? 'bg-blue-500 text-white' : 'bg-white border'
+                      className={`flex-1 px-4 py-3 text-sm font-medium transition-colors relative ${
+                        filters.main === 'selling' 
+                          ? 'text-blue-600' 
+                          : 'text-gray-600 hover:text-gray-900'
                       }`}
                     >
                       Selling
+                      {filters.main === 'selling' && (
+                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
+                      )}
                     </button>
                   </div>
-                  <div className="flex gap-2">
+                  
+                  {/* Sub Filters */}
+                  <div className="flex gap-4 px-4 py-2">
                     <button
                       onClick={() => setFilters({ ...filters, sub: 'all' })}
-                      className={`px-2 py-1 text-xs rounded ${
-                        filters.sub === 'all' ? 'bg-gray-700 text-white' : 'bg-white border'
+                      className={`text-xs font-medium transition-colors ${
+                        filters.sub === 'all' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'
                       }`}
                     >
                       All
                     </button>
                     <button
                       onClick={() => setFilters({ ...filters, sub: 'unread' })}
-                      className={`px-2 py-1 text-xs rounded ${
-                        filters.sub === 'unread' ? 'bg-gray-700 text-white' : 'bg-white border'
+                      className={`text-xs font-medium transition-colors ${
+                        filters.sub === 'unread' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'
                       }`}
                     >
                       Unread
                     </button>
                     <button
                       onClick={() => setFilters({ ...filters, sub: 'important' })}
-                      className={`px-2 py-1 text-xs rounded ${
-                        filters.sub === 'important' ? 'bg-gray-700 text-white' : 'bg-white border'
+                      className={`text-xs font-medium transition-colors ${
+                        filters.sub === 'important' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'
                       }`}
                     >
                       Important

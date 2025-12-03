@@ -1,5 +1,5 @@
 "use client"
-import { BarChart3, Users, BookOpen, Calendar, Settings, Home, Award, X, FolderTree, Car, FileText } from "lucide-react"
+import { BarChart3, Users, BookOpen, Calendar, Settings, Home, Award, X, FolderTree, Car, FileText, CreditCard } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
@@ -12,6 +12,8 @@ export default function AdminSidebar({ sidebarOpen, setSidebarOpen }) {
     { id: "users", name: "Users", icon: Users, href: "/admin/users" },
     { id: "categories", name: "Categories", icon: FolderTree, href: "/admin/categories" },
     { id: "subscription-plans", name: "Subscription Plans", icon: Award, href: "/admin/subscriptions" },
+    { id: "user-subscriptions", name: "User Subscriptions", icon: Users, href: "/admin/user-subscriptions" },
+    { id: "manual-payments", name: "Manual Payments", icon: CreditCard, href: "/admin/manual-payments" },
     { id: "payments", name: "Payments", icon: BarChart3, href: "/admin/payments" },
     { id: "reports", name: "Reports", icon: Calendar, href: "/admin/reports" },
     { id: "settings", name: "Settings", icon: Settings, href: "/admin/settings" },

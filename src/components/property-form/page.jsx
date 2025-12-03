@@ -11,8 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
+import { StateSelect } from "@/components/ui/state-select"
+import { CitySelect } from "@/components/ui/city-select"
 import listingService from "@/app/services/api/listingService"
-import commonService from "@/app/services/api/commonService"
 import { toast } from "sonner"
 import { 
   Home, 
@@ -70,9 +71,6 @@ export default function PropertyForm() {
   const [currentStep, setCurrentStep] = useState(1)
   const [submitting, setSubmitting] = useState(false)
   const [savingDraft, setSavingDraft] = useState(false)
-  const [states, setStates] = useState([])
-  const [cities, setCities] = useState([])
-  const [loading, setLoading] = useState({ states: false, cities: false })
   
   const [formData, setFormData] = useState({
     title: "",
@@ -104,46 +102,7 @@ export default function PropertyForm() {
     coverPhotoIndex: 0,
   })
 
-  useEffect(() => {
-    loadStates()
-  }, [])
 
-  const loadStates = async () => {
-    setLoading((prev) => ({ ...prev, states: true }))
-    try {
-      const response = await commonService.getStates()
-      if (response.success) {
-        setStates(response.data)
-      }
-    } catch (error) {
-      console.error("Failed to load states:", error)
-    } finally {
-      setLoading((prev) => ({ ...prev, states: false }))
-    }
-  }
-
-  const loadCities = async (stateId) => {
-    setLoading((prev) => ({ ...prev, cities: true }))
-    setCities([])
-    try {
-      const response = await commonService.getCitiesByState(stateId)
-      if (response.success) {
-        setCities(response.data)
-      }
-    } catch (error) {
-      console.error("Failed to load cities:", error)
-    } finally {
-      setLoading((prev) => ({ ...prev, cities: false }))
-    }
-  }
-
-  const handleStateChange = (stateId) => {
-    setFormData((prev) => ({ ...prev, stateId, cityId: "" }))
-    setCities([])
-    if (stateId) {
-      loadCities(stateId)
-    }
-  }
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
@@ -500,55 +459,23 @@ export default function PropertyForm() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="state" className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-primary" />
-                    State *
-                  </Label>
-                  <Select value={formData.stateId} onValueChange={handleStateChange} disabled={loading.states}>
-                    <SelectTrigger className="h-11">
-                      <SelectValue placeholder={loading.states ? "Loading states..." : "Select state"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {states.map((state) => (
-                        <SelectItem key={state.id} value={state.id.toString()}>
-                          {state.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <StateSelect
+                  value={formData.stateId}
+                  onChange={(stateId) => {
+                    handleInputChange("stateId", stateId)
+                    handleInputChange("cityId", "")
+                  }}
+                  required
+                  className="w-full"
+                />
 
-                <div className="space-y-2">
-                  <Label htmlFor="city" className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-primary" />
-                    City *
-                  </Label>
-                  <Select
-                    value={formData.cityId}
-                    onValueChange={(value) => handleInputChange("cityId", value)}
-                    disabled={!formData.stateId || loading.cities}
-                  >
-                    <SelectTrigger className="h-11">
-                      <SelectValue 
-                        placeholder={
-                          loading.cities 
-                            ? "Loading cities..." 
-                            : !formData.stateId 
-                            ? "Select state first" 
-                            : "Select city"
-                        } 
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {cities.map((city) => (
-                        <SelectItem key={city.id} value={city.id.toString()}>
-                          {city.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <CitySelect
+                  stateId={formData.stateId}
+                  value={formData.cityId}
+                  onChange={(cityId) => handleInputChange("cityId", cityId)}
+                  required
+                  className="w-full"
+                />
 
                 <div className="space-y-2">
                   <Label htmlFor="locality" className="flex items-center gap-2">

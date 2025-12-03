@@ -151,10 +151,12 @@ const UserHeader = () => {
                     </DropdownMenuItem>
                   </Link>
 
-                  <DropdownMenuItem className="flex items-center gap-3 px-4 py-3">
-                    <Package className="h-5 w-5" />
-                    <span>My Subscriptions</span>
-                  </DropdownMenuItem>
+                  <Link href="/billing">
+                    <DropdownMenuItem className="flex items-center gap-3 px-4 py-3">
+                      <Package className="h-5 w-5" />
+                      <span>Billing</span>
+                    </DropdownMenuItem>
+                  </Link>
 
                   <DropdownMenuSeparator />
 

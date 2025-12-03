@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import ChatHeader from "./ChatHeader";
 import ChatMessage from "./ChatMessage";
 import ChatInput from "./ChatInput";
+import ImageModal from "./ImageModal";
 import { getMessages, sendImageMessage, markMessagesAsRead } from "@/app/services/api/chatService";
 import socketService from "@/app/services/socketService";
 import { toast } from "sonner";
@@ -24,6 +25,7 @@ export default function ChatWindow({
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [typingUsers, setTypingUsers] = useState(new Set());
+  const [selectedImage, setSelectedImage] = useState(null);
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -170,12 +172,39 @@ export default function ChatWindow({
   const handleSendImage = async (file) => {
     try {
       setSending(true);
+      
+      // Create preview URL
+      const previewUrl = URL.createObjectURL(file);
+      
+      // Add temporary message with preview
+      const tempMessage = {
+        id: `temp-${Date.now()}`,
+        senderId: currentUserId,
+        messageType: 'image',
+        previewUrl,
+        uploading: true,
+        createdAt: new Date().toISOString(),
+        sender: { id: currentUserId }
+      };
+      
+      setMessages(prev => [...prev, tempMessage]);
+      scrollToBottom();
+      
+      // Upload image
       const response = await sendImageMessage(room.id, file);
+      
       if (response.success) {
+        // Remove temp message and reload to get actual message
+        setMessages(prev => prev.filter(msg => msg.id !== tempMessage.id));
         await loadMessages();
         toast.success('Image sent');
       }
+      
+      // Clean up preview URL
+      URL.revokeObjectURL(previewUrl);
     } catch (error) {
+      // Remove temp message on error
+      setMessages(prev => prev.filter(msg => !msg.uploading));
       toast.error(error.message || 'Failed to send image');
     } finally {
       setSending(false);
@@ -243,6 +272,7 @@ export default function ChatWindow({
                 message={message}
                 isOwn={message.senderId === currentUserId}
                 sender={message.sender}
+                onImageClick={setSelectedImage}
               />
             ))}
             {/* Typing Indicator */}
@@ -269,6 +299,14 @@ export default function ChatWindow({
         onTyping={handleTyping}
         disabled={sending || !room.isActive}
       />
+
+      {/* Image Modal */}
+      {selectedImage && (
+        <ImageModal
+          imageUrl={selectedImage}
+          onClose={() => setSelectedImage(null)}
+        />
+      )}
     </div>
   );
 }

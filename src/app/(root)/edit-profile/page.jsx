@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
+import { StateSelect } from "@/components/ui/state-select"
+import { CitySelect } from "@/components/ui/city-select"
 import { ArrowLeft, Camera, Phone, Mail, MapPin, User, Save, Shield } from "lucide-react"
 
 export default function EditProfilePage() {
@@ -18,7 +20,8 @@ export default function EditProfilePage() {
     name: "Ahmad Raza",
     email: "ahmad.raza@example.com",
     phone: "+92 300 1234567",
-    location: "Varanasi, Uttar Pradesh, India",
+    stateId: "",
+    cityId: "",
     bio: "",
     avatar: "https://i.pravatar.cc/300",
   })
@@ -111,34 +114,37 @@ export default function EditProfilePage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input
-                    id="name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    placeholder="Enter your full name"
-                    required
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="name">Full Name</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  placeholder="Enter your full name"
+                  required
+                />
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="location">Location</Label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Input
-                      id="location"
-                      name="location"
-                      value={formData.location}
-                      onChange={handleInputChange}
-                      placeholder="City, Country"
-                      className="pl-10"
-                      required
-                    />
-                  </div>
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <StateSelect
+                  value={formData.stateId}
+                  onChange={(stateId) => {
+                    setFormData((prev) => ({ ...prev, stateId, cityId: "" }))
+                  }}
+                  showLabel
+                  className="w-full"
+                />
+
+                <CitySelect
+                  stateId={formData.stateId}
+                  value={formData.cityId}
+                  onChange={(cityId) => {
+                    setFormData((prev) => ({ ...prev, cityId }))
+                  }}
+                  showLabel
+                  className="w-full"
+                />
               </div>
 
               <div className="space-y-2">

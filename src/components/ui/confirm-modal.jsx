@@ -19,8 +19,19 @@ export default function ConfirmModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-gray-200 bg-opacity-50 flex items-center justify-center z-50 animate-in fade-in-0 duration-200">
-      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl animate-in zoom-in-95 duration-200">
+    <div 
+      className="fixed inset-0 flex items-center justify-center z-50"
+      style={{ 
+        backgroundColor: 'rgba(0, 0, 0, 0.85)',
+        animation: 'fadeIn 0.2s ease-out'
+      }}
+      onClick={onClose}
+    >
+      <div 
+        className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl"
+        style={{ animation: 'zoomIn 0.2s ease-out' }}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3">
             {variant === "danger" && (
@@ -60,6 +71,24 @@ export default function ConfirmModal({
           </button>
         </div>
       </div>
+
+      {/* CSS Animations */}
+      <style jsx>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes zoomIn {
+          from { 
+            opacity: 0;
+            transform: scale(0.95);
+          }
+          to { 
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+      `}</style>
     </div>
   )
 }

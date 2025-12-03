@@ -130,7 +130,10 @@ export default function AdsManagement() {
   }
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-IN', {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Invalid Date';
+    return date.toLocaleDateString('en-IN', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
@@ -264,7 +267,7 @@ export default function AdsManagement() {
                               {listing.city?.name}, {listing.state?.name}
                             </div>
                             <div className="text-xs text-gray-400">
-                              {formatDate(listing.createdAt)}
+                              {formatDate(listing.created_at || listing.createdAt)}
                             </div>
                           </div>
                         </div>
