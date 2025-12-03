@@ -69,7 +69,6 @@ export default function CarListings() {
 
   const getLocation = (listing) => {
     const parts = []
-    if (listing.locality) parts.push(listing.locality)
     if (listing.city?.name) parts.push(listing.city.name)
     if (listing.state?.name) parts.push(listing.state.name)
     return parts.join(", ") || "Location not specified"

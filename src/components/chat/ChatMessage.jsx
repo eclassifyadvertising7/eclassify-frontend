@@ -5,8 +5,9 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDateTime } from "@/lib/dateTimeUtils";
+import { Download } from "lucide-react";
 
-export default function ChatMessage({ message, isOwn, sender }) {
+export default function ChatMessage({ message, isOwn, sender, onImageClick }) {
   const renderMessageContent = () => {
     switch (message.messageType) {
       case 'text':
@@ -19,16 +20,56 @@ export default function ChatMessage({ message, isOwn, sender }) {
         );
 
       case 'image':
+        const imageUrl = message.mediaUrl || message.previewUrl;
+        console.log('Image message:', { messageType: message.messageType, mediaUrl: message.mediaUrl, previewUrl: message.previewUrl, uploading: message.uploading });
+        
+        if (!imageUrl) {
+          return (
+            <div className="px-4 py-2 rounded-lg bg-gray-200 text-gray-600 text-sm">
+              Image not available
+            </div>
+          );
+        }
+        
         return (
-          <div className="max-w-sm">
-            <img
-              src={message.mediaUrl}
-              alt="Shared image"
-              className="rounded-lg w-full h-auto cursor-pointer hover:opacity-90"
-              onClick={() => window.open(message.mediaUrl, '_blank')}
-            />
+          <div className="relative group">
+            <div className="relative">
+              <img
+                src={imageUrl}
+                alt="Shared image"
+                className="rounded-lg w-32 h-40 object-cover cursor-pointer hover:brightness-90 transition-all"
+                onClick={() => {
+                  console.log('Image clicked:', imageUrl);
+                  if (message.mediaUrl && onImageClick) {
+                    onImageClick(message.mediaUrl);
+                  }
+                }}
+                onError={(e) => {
+                  console.error('Image load error:', imageUrl);
+                  e.target.src = '/assets/img/placeholder.jpg';
+                }}
+              />
+              {/* Hover Overlay */}
+              {message.mediaUrl && !message.uploading && (
+                <div 
+                  className="absolute inset-0 rounded-lg transition-all flex items-center justify-center pointer-events-none group-hover:opacity-100 opacity-0"
+                  style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)' }}
+                >
+                  <Download className="w-6 h-6 text-white" />
+                </div>
+              )}
+              {/* Upload Spinner */}
+              {message.uploading && (
+                <div 
+                  className="absolute inset-0 rounded-lg flex items-center justify-center"
+                  style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+                >
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                </div>
+              )}
+            </div>
             {message.messageText && (
-              <p className={`mt-2 text-sm px-2 ${isOwn ? 'text-white' : 'text-gray-700'}`}>
+              <p className={`mt-2 text-sm ${isOwn ? 'text-gray-700' : 'text-gray-700'}`}>
                 {message.messageText}
               </p>
             )}

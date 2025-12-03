@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
+import { StateSelect } from "@/components/ui/state-select"
+import { CitySelect } from "@/components/ui/city-select"
 import { getCarBrands, getCarModels, getCarVariants } from "@/app/services/api/carDataService"
 import listingService from "@/app/services/api/listingService"
 import { toast } from "sonner"
@@ -89,8 +91,8 @@ export default function CarForm() {
     ownersCount: "",
     condition: "used",
     registrationNumber: "",
-    stateId: 1,
-    cityId: 1,
+    stateId: "",
+    cityId: "",
     locality: "",
     address: "",
     title: "",
@@ -644,6 +646,24 @@ export default function CarForm() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <StateSelect
+                  value={formData.stateId}
+                  onChange={(stateId) => {
+                    handleInputChange("stateId", stateId)
+                    handleInputChange("cityId", "")
+                  }}
+                  required
+                  className="w-full"
+                />
+
+                <CitySelect
+                  stateId={formData.stateId}
+                  value={formData.cityId}
+                  onChange={(cityId) => handleInputChange("cityId", cityId)}
+                  required
+                  className="w-full"
+                />
+
                 <div className="space-y-2">
                   <Label htmlFor="locality" className="flex items-center gap-2">
                     <MapPin className="h-4 w-4 text-primary" />
