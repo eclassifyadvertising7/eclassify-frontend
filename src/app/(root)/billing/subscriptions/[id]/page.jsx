@@ -6,6 +6,8 @@ import { ArrowLeft, Calendar, CheckCircle, XCircle, Clock, AlertCircle, Package 
 import subscriptionService from "@/app/services/api/subscriptionService"
 import { toast } from "sonner"
 import { formatDateTime } from "@/lib/dateTimeUtils"
+import Header from "@/components/Header"
+import FooterSection from "@/components/Footer"
 
 export default function SubscriptionDetailPage() {
   const params = useParams()
@@ -54,13 +56,17 @@ export default function SubscriptionDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center py-12">
-            <p className="text-gray-600">Loading subscription details...</p>
+      <>
+        <Header />
+        <section className="min-h-screen bg-gray-50 py-8">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center py-12">
+              <p className="text-gray-600">Loading subscription details...</p>
+            </div>
           </div>
-        </div>
-      </div>
+        </section>
+        <FooterSection />
+      </>
     )
   }
 
@@ -69,7 +75,9 @@ export default function SubscriptionDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <>
+      <Header />
+      <section className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <button
           onClick={() => router.push('/billing')}
@@ -177,16 +185,27 @@ export default function SubscriptionDetailPage() {
             <div className="border-t border-gray-200 pt-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Listing Quotas</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {subscription.maxActiveListings && (
+                {subscription.listingQuotaLimit !== undefined && subscription.listingQuotaLimit !== null && (
+                  <div className="text-center p-3 bg-green-50 rounded-lg">
+                    <p className="text-2xl font-bold text-green-600">{subscription.listingQuotaLimit}</p>
+                    <p className="text-xs text-gray-600 mt-1">Listings per {subscription.listingQuotaRollingDays || 30} days</p>
+                  </div>
+                )}
+                {subscription.maxActiveListings !== undefined && subscription.maxActiveListings !== null && (
                   <div className="text-center p-3 bg-blue-50 rounded-lg">
                     <p className="text-2xl font-bold text-blue-600">{subscription.maxActiveListings}</p>
                     <p className="text-xs text-gray-600 mt-1">Active Listings</p>
                   </div>
                 )}
-                {subscription.maxFeaturedListings && (
-                  <div className="text-center p-3 bg-purple-50 rounded-lg">
-                    <p className="text-2xl font-bold text-purple-600">{subscription.maxFeaturedListings}</p>
+                {subscription.maxFeaturedListings !== undefined && subscription.maxFeaturedListings !== null && (
+                  <div className={`text-center p-3 rounded-lg ${subscription.maxFeaturedListings > 0 ? 'bg-purple-50' : 'bg-gray-100 opacity-60'}`}>
+                    <p className={`text-2xl font-bold ${subscription.maxFeaturedListings > 0 ? 'text-purple-600' : 'text-gray-400'}`}>
+                      {subscription.maxFeaturedListings}
+                    </p>
                     <p className="text-xs text-gray-600 mt-1">Featured Listings</p>
+                    {subscription.maxFeaturedListings === 0 && (
+                      <p className="text-xs text-gray-500 mt-1">Upgrade to unlock</p>
+                    )}
                   </div>
                 )}
               </div>
@@ -221,6 +240,8 @@ export default function SubscriptionDetailPage() {
           </div>
         </div>
       </div>
-    </div>
+      </section>
+      <FooterSection />
+    </>
   )
 }

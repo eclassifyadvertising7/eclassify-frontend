@@ -166,7 +166,7 @@ export default function BillingPage() {
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-gray-50 py-8">
+      <section className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Billing</h1>
@@ -256,7 +256,7 @@ export default function BillingPage() {
                             >
                               View Details
                             </button>
-                            {subscription.status === 'active' && (
+                            {/* {subscription.status === 'active' && (
                               <button 
                                 onClick={() => setCancelModal({ 
                                   isOpen: true, 
@@ -267,7 +267,7 @@ export default function BillingPage() {
                               >
                                 Cancel
                               </button>
-                            )}
+                            )} */}
                           </div>
                         </div>
                       </div>
@@ -422,34 +422,34 @@ export default function BillingPage() {
           </div>
         </div>
         </div>
-
-        {/* Cancel Confirmation Modal */}
-        <ConfirmModal
-          isOpen={cancelModal.isOpen}
-          onClose={() => {
-            setCancelModal({ isOpen: false, subscriptionId: null, planName: '' })
-            setCancelReason('')
-          }}
-          onConfirm={handleCancelSubscription}
-          title="Cancel Subscription"
-          message={
-            <div>
-              <p className="mb-4">Are you sure you want to cancel "{cancelModal.planName}"?</p>
-              <textarea
-                value={cancelReason}
-                onChange={(e) => setCancelReason(e.target.value)}
-                placeholder="Please tell us why you're cancelling (optional)"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                rows={3}
-              />
-            </div>
-          }
-          confirmText="Cancel Subscription"
-          cancelText="Keep Subscription"
-          variant="danger"
-        />
-      </div>
+      </section>
       <FooterSection />
+      
+      {/* Cancel Confirmation Modal */}
+      <ConfirmModal
+        isOpen={cancelModal.isOpen}
+        onClose={() => {
+          setCancelModal({ isOpen: false, subscriptionId: null, planName: '' })
+          setCancelReason('')
+        }}
+        onConfirm={handleCancelSubscription}
+        title="Cancel Subscription"
+        message={
+          <div>
+            <p className="mb-4">Are you sure you want to cancel "{cancelModal.planName}"?</p>
+            <textarea
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              placeholder="Please tell us why you're cancelling (optional)"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              rows={3}
+            />
+          </div>
+        }
+        confirmText="Cancel Subscription"
+        cancelText="Keep Subscription"
+        variant="danger"
+      />
     </>
   )
 }

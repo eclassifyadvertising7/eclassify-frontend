@@ -1,13 +1,15 @@
 "use client"
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { Heart, Phone, MessageCircle, Star, Eye, Fuel, Users, Palette, Settings, Zap } from "lucide-react"
+import { Heart, Phone, MessageCircle, Star, Eye, Fuel, Users, Palette, Settings, Zap, ArrowLeft } from "lucide-react"
 import Header from "@/components/Header"
 import FooterSection from "@/components/Footer"
+import Tooltip from "@/components/ui/tooltip"
 import { getListingBySlug, incrementListingView } from "@/app/services/api/publicListingsService"
 import { createOrGetChatRoom } from "@/app/services/api/chatService"
 import { toast } from "sonner"
 import { getPostedByTypeBadge } from "@/lib/utils"
+import { canIncrementView, recordView, cleanupOldViews } from "@/lib/viewTracking"
 
 export default function ProductDetails() {
   const params = useParams()
@@ -25,6 +27,8 @@ export default function ProductDetails() {
   useEffect(() => {
     if (slug) {
       fetchListingDetails()
+      // Clean up old view records on page load
+      cleanupOldViews()
     }
   }, [slug])
 
@@ -36,8 +40,13 @@ export default function ProductDetails() {
       
       if (result.success) {
         setListing(result.data)
-        // Increment view count
-        await incrementListingView(result.data.id)
+        
+        // Increment view count only if not viewed in last hour
+        if (canIncrementView(result.data.id)) {
+          await incrementListingView(result.data.id)
+          recordView(result.data.id)
+        }
+        
         // Set default message
         setMessage(`Hi, I am interested in [${result.data.title}]. Please let me know if it's still available. Thanks.`)
       } else {
@@ -97,6 +106,17 @@ export default function ProductDetails() {
     }
   }
 
+  const handleCallClick = async () => {
+    // Increment view count when user clicks call button
+    if (listing && canIncrementView(listing.id)) {
+      await incrementListingView(listing.id)
+      recordView(listing.id)
+    }
+    
+    // TODO: Implement actual call functionality
+    toast.info('Call functionality coming soon')
+  }
+
   // Check if current user owns this listing
   const getCurrentUser = () => {
     if (typeof window === 'undefined') return null
@@ -146,15 +166,24 @@ export default function ProductDetails() {
     <>
       <Header />
       <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Back Button */}
+        <button
+          onClick={() => router.back()}
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          <span className="font-medium">Back</span>
+        </button>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - Images and Specs */}
           <div className="lg:col-span-2 space-y-6">
             {/* Main Image */}
-            <div className="relative">
+            <div className="relative bg-gray-100 rounded-lg overflow-hidden h-96">
               <img
                 src={images[selectedImage]}
                 alt={listing.title}
-                className="w-full h-96 object-cover rounded-lg shadow-lg"
+                className="w-full h-full object-scale-down rounded-lg shadow-lg"
               />
               <button
                 onClick={() => setIsFavorite(!isFavorite)}
@@ -210,6 +239,13 @@ export default function ProductDetails() {
                   <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                     <Settings className="w-5 h-5 text-gray-600" />
                     <div>
+                      <p className="text-sm text-gray-600">Variant</p>
+                      <p className="font-medium">{listing.carListing.variant?.variantName || "N/A"}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                    <Settings className="w-5 h-5 text-gray-600" />
+                    <div>
                       <p className="text-sm text-gray-600">Year</p>
                       <p className="font-medium">{listing.carListing.year}</p>
                     </div>
@@ -246,7 +282,7 @@ export default function ProductDetails() {
                     <Palette className="w-5 h-5 text-gray-600" />
                     <div>
                       <p className="text-sm text-gray-600">Color</p>
-                      <p className="font-medium">{listing.carListing.color}</p>
+                      <p className="font-medium">{listing.carListing.color || "N/A"}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
@@ -263,6 +299,24 @@ export default function ProductDetails() {
                       <p className="font-medium">{listing.carListing.ownersCount}</p>
                     </div>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* Car Features */}
+            {listing.carListing?.features && listing.carListing.features.length > 0 && (
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <div className="w-3 h-3 bg-cyan-500 rounded-full"></div>
+                  Features
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {listing.carListing.features.map((feature, index) => (
+                    <div key={index} className="flex items-center gap-2 text-sm">
+                      <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full"></div>
+                      <span className="text-gray-700">{feature}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
@@ -332,23 +386,26 @@ export default function ProductDetails() {
 
                   {/* Action Buttons */}
                   <div className="grid grid-cols-2 gap-3 mb-4">
-                    <button 
-                      onClick={handleChatClick}
-                      disabled={isOwnListing || creatingChat}
-                      className="flex items-center justify-center gap-2 bg-gray-900 text-white px-4 py-3 rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      title={isOwnListing ? 'Cannot chat on your own listing' : 'Chat with seller'}
-                    >
-                      <MessageCircle className="w-4 h-4" />
-                      {creatingChat ? 'Loading...' : 'Chat'}
-                    </button>
-                    <button 
-                      disabled={isOwnListing}
-                      className="flex items-center justify-center gap-2 bg-cyan-600 text-white px-4 py-3 rounded-lg hover:bg-cyan-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      title={isOwnListing ? 'Cannot call yourself' : 'Call seller'}
-                    >
-                      <Phone className="w-4 h-4" />
-                      Call
-                    </button>
+                    <Tooltip content={isOwnListing ? 'Cannot chat on your own listing' : 'Chat with seller'}>
+                      <button 
+                        onClick={handleChatClick}
+                        disabled={isOwnListing || creatingChat}
+                        className="flex items-center justify-center gap-2 bg-gray-900 text-white px-4 py-3 rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed w-full"
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                        {creatingChat ? 'Loading...' : 'Chat'}
+                      </button>
+                    </Tooltip>
+                    <Tooltip content={isOwnListing ? 'Cannot call yourself' : 'Call seller'}>
+                      <button 
+                        onClick={handleCallClick}
+                        disabled={isOwnListing}
+                        className="flex items-center justify-center gap-2 bg-cyan-600 text-white px-4 py-3 rounded-lg hover:bg-cyan-700 transition-colors disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed w-full"
+                      >
+                        <Phone className="w-4 h-4" />
+                        Call
+                      </button>
+                    </Tooltip>
                   </div>
                 </div>
               )}
@@ -382,11 +439,19 @@ export default function ProductDetails() {
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Type your message here..."
-                className="w-full h-24 p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                disabled={isOwnListing}
+                className="w-full h-24 p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
               />
-              <button className="w-full mt-3 bg-cyan-600 text-white py-3 rounded-lg hover:bg-cyan-700 transition-colors">
-                Send Message
-              </button>
+              <Tooltip content={isOwnListing ? 'Cannot send message to your own listing' : 'Send message to seller'}>
+                <div className="w-full mt-3">
+                  <button 
+                    disabled={isOwnListing}
+                    className="w-full bg-cyan-600 text-white py-3 rounded-lg hover:bg-cyan-700 transition-colors disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                  >
+                    Send Message
+                  </button>
+                </div>
+              </Tooltip>
             </div>
 
             {/* Safety Tips */}

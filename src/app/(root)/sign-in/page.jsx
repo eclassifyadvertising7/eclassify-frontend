@@ -17,7 +17,7 @@ import { toast } from "sonner"
 
 export default function AuthPage() {
   const router = useRouter()
-  const { login, signup, isAuthenticated } = useAuth()
+  const { login, signup, isAuthenticated, updateUser } = useAuth()
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -135,9 +135,20 @@ export default function AuthPage() {
 
     setLoading(true)
     try {
-      await authService.sendOTP(mobile)
-      setOtpSent(true)
-      toast.success("OTP sent successfully!")
+      const type = isSignUp ? 'signup' : 'login'
+      const response = await authService.sendOTP(mobile, type)
+      
+      if (response.success) {
+        setOtpSent(true)
+        toast.success("OTP sent successfully!")
+        
+        // Auto-fill OTP in development mode
+        if (process.env.NODE_ENV === 'development' && response.data?.otp) {
+          setOtp(response.data.otp)
+        }
+      } else {
+        toast.error(response.message || "Failed to send OTP")
+      }
     } catch (error) {
       toast.error(error.message || "Failed to send OTP")
     } finally {
@@ -149,21 +160,36 @@ export default function AuthPage() {
   const handleVerifyOtp = async (e) => {
     e.preventDefault()
     
-    if (!otp || otp.length !== 6) {
-      toast.error("Please enter a valid 6-digit OTP")
+    if (!otp || otp.length !== 4) {
+      toast.error("Please enter a valid 4-digit OTP")
       return
     }
 
     setLoading(true)
     try {
-      const response = await authService.verifyOTP(mobile, otp)
+      let response
+      
+      if (isSignUp) {
+        // Signup requires fullName
+        if (!name || name.length < 2) {
+          toast.error("Full name is required for signup")
+          setLoading(false)
+          return
+        }
+        response = await authService.verifyOTPSignup(mobile, otp, name)
+      } else {
+        // Login doesn't require fullName
+        response = await authService.verifyOTPLogin(mobile, otp)
+      }
       
       if (response.success) {
         const user = response?.data?.user
         const redirectPath = (user?.role === "admin" || user?.role === "super_admin") ? "/admin" : "/"
         
         toast.success(isSignUp ? "Account created successfully!" : "Login successful!")
-        router.replace(redirectPath)
+        
+        // Force page reload to update header with user info
+        window.location.href = redirectPath
       } else {
         toast.error(response.message || "Invalid OTP")
         setLoading(false)
@@ -405,10 +431,10 @@ export default function AuthPage() {
                         <Input
                           id="otp"
                           type="text"
-                          placeholder="6-digit OTP"
-                          maxLength={6}
+                          placeholder="Enter 4-digit OTP"
+                          maxLength={4}
                           value={otp}
-                          onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                          onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 4))}
                           className="text-center text-lg tracking-widest"
                         />
                       </div>
