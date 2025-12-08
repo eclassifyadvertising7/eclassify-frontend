@@ -92,6 +92,7 @@ export const AuthProvider = ({ children }) => {
   // Update user in context
   const updateUser = (updatedUser) => {
     setUser(updatedUser)
+    setIsAuthenticated(true)
     try {
       localStorage.setItem('user', JSON.stringify(updatedUser))
     } catch (error) {

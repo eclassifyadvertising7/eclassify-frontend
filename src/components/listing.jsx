@@ -76,6 +76,7 @@ export default function CarListings() {
 
   const toggleFavorite = (e, listingId) => {
     e.preventDefault()
+    e.stopPropagation()
     const newFavorites = new Set(favorites)
     if (newFavorites.has(listingId)) {
       newFavorites.delete(listingId)

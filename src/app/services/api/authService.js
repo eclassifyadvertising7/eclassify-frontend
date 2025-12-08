@@ -138,15 +138,48 @@ export const authService = {
     return !!token && isValidToken(token);
   },
 
-  // OTP-based authentication (to be implemented later)
-  sendOTP: async (mobile, countryCode = '+91') => {
-    // Placeholder for OTP implementation
-    return httpClient.post('/auth/send-otp', { mobile, countryCode });
+  // Send OTP for signup or login
+  sendOTP: async (mobile, type = 'login', countryCode = '+91') => {
+    return httpClient.post('/auth/otp/send', { 
+      mobile, 
+      countryCode,
+      type // 'signup', 'login', or 'verification'
+    });
   },
 
-  verifyOTP: async (mobile, otp, countryCode = '+91') => {
-    // Placeholder for OTP implementation
-    const response = await httpClient.post('/auth/verify-otp', { mobile, otp, countryCode });
+  // Verify OTP for signup (requires fullName)
+  verifyOTPSignup: async (mobile, otp, fullName, countryCode = '+91', device_name = null) => {
+    const response = await httpClient.post('/auth/otp/verify', { 
+      mobile, 
+      otp, 
+      type: 'signup',
+      fullName,
+      countryCode,
+      device_name: device_name || (typeof navigator !== 'undefined' ? navigator.userAgent : 'Unknown Device')
+    });
+    
+    if (response.success && response.data?.tokens) {
+      const { access_token, refresh_token } = response.data.tokens;
+      
+      if (isValidToken(access_token) && isValidToken(refresh_token)) {
+        secureStorage.setItem('access_token', access_token);
+        secureStorage.setItem('refresh_token', refresh_token);
+        secureStorage.setItem('user', JSON.stringify(response.data.user));
+      }
+    }
+    
+    return response;
+  },
+
+  // Verify OTP for login (no fullName required)
+  verifyOTPLogin: async (mobile, otp, countryCode = '+91', device_name = null) => {
+    const response = await httpClient.post('/auth/otp/verify', { 
+      mobile, 
+      otp, 
+      type: 'login',
+      countryCode,
+      device_name: device_name || (typeof navigator !== 'undefined' ? navigator.userAgent : 'Unknown Device')
+    });
     
     if (response.success && response.data?.tokens) {
       const { access_token, refresh_token } = response.data.tokens;
