@@ -11,6 +11,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ChatRoomItem from "@/components/chat/ChatRoomItem";
 import ChatWindow from "@/components/chat/ChatWindow";
+import ChatSafetyDialog from "@/components/chat/ChatSafetyDialog";
 import { getChatRooms, deleteChatRoom, blockUser, reportUser, requestContact } from "@/app/services/api/chatService";
 import socketService from "@/app/services/socketService";
 import { toast } from "sonner";
@@ -22,6 +23,7 @@ function ChatsContent() {
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [showSafetyDialog, setShowSafetyDialog] = useState(false);
   const [filters, setFilters] = useState({
     main: 'all',
     sub: 'all'
@@ -49,6 +51,12 @@ function ChatsContent() {
       return;
     }
     setCurrentUserId(user.id);
+
+    // Check if user has seen safety dialog this session
+    const hasSeenSafetyDialog = sessionStorage.getItem('chatSafetyDialogSeen');
+    if (!hasSeenSafetyDialog) {
+      setShowSafetyDialog(true);
+    }
 
     // Connect to socket
     socketService.connect();
@@ -165,9 +173,27 @@ function ChatsContent() {
     setSelectedRoom(null);
   };
 
+  const handleAcceptSafety = () => {
+    sessionStorage.setItem('chatSafetyDialogSeen', 'true');
+    setShowSafetyDialog(false);
+  };
+
+  const handleCancelSafety = () => {
+    router.push('/');
+  };
+
   return (
     <>
       <Header />
+      
+      {/* Safety Dialog */}
+      {showSafetyDialog && (
+        <ChatSafetyDialog
+          onAccept={handleAcceptSafety}
+          onCancel={handleCancelSafety}
+        />
+      )}
+
       <div className="bg-white" style={{ height: 'calc(100vh - 64px)' }}>
         <div className="h-full flex">
           <div className="bg-white shadow-sm overflow-hidden h-full flex" style={{ width: '100%', maxWidth: '100vw' }}>
