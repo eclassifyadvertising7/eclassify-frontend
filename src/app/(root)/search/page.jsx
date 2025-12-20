@@ -1,22 +1,30 @@
 "use client"
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import Header from "@/components/Header"
 import FooterSection from "@/components/Footer"
 import SearchResults from "@/components/SearchResults"
 
-export default function SearchPage() {
+function SearchContent() {
   const searchParams = useSearchParams()
   const initialQuery = searchParams.get('q') || ''
   const initialCategory = searchParams.get('category') || ''
 
   return (
+    <SearchResults 
+      initialQuery={initialQuery}
+      initialCategory={initialCategory}
+    />
+  )
+}
+
+export default function SearchPage() {
+  return (
     <div>
       <Header />
-      <SearchResults 
-        initialQuery={initialQuery}
-        initialCategory={initialCategory}
-      />
+      <Suspense fallback={<div className="flex justify-center items-center min-h-[400px]">Loading search results...</div>}>
+        <SearchContent />
+      </Suspense>
       <FooterSection />
     </div>
   )

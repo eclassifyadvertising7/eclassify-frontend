@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * FavoritesList Component
  * Display user's favorite listings with pagination and filters

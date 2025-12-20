@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * useFavorites Hook
  * Custom hook for managing user favorites functionality

@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from 'react';
 import { MapPin, Navigation, AlertCircle } from 'lucide-react';
 import { useGeolocation } from '@/hooks/useGeolocation';
@@ -203,7 +205,7 @@ export default function LocationDemo() {
           <div>
             <strong>3. Filter nearby listings:</strong>
             <code className="block bg-white p-2 rounded mt-1 text-xs">
-              const nearbyListings = listings.filter(listing => calculateDistance(location, listing.location) &lt; 10)
+              const nearbyListings = listings.filter(listing =&gt; calculateDistance(location, listing.location) &lt; 10)
             </code>
           </div>
         </div>

@@ -101,10 +101,12 @@ export const incrementListingView = async (id) => {
 };
 
 // Export all functions as default object
-export default {
+const publicListingsService = {
   getHomepageListings,
   browseCategoryListings,
   getFeaturedListings,
   getListingBySlug,
   incrementListingView,
 };
+
+export default publicListingsService;

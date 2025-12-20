@@ -1,4 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+"use client";
+
+import { useState, useEffect, useCallback, useMemo } from 'react';
 
 /**
  * Custom hook for handling browser geolocation
@@ -11,12 +13,12 @@ export const useGeolocation = (options = {}) => {
   const [error, setError] = useState(null);
   const [permissionStatus, setPermissionStatus] = useState('prompt'); // 'granted', 'denied', 'prompt'
 
-  const defaultOptions = {
+  const defaultOptions = useMemo(() => ({
     enableHighAccuracy: true,
     timeout: 10000,
     maximumAge: 300000, // 5 minutes
     ...options
-  };
+  }), [options]);
 
   // Check if geolocation is supported
   const isSupported = 'geolocation' in navigator;

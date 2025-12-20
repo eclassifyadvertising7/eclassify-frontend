@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect, useRef } from 'react';
 import { MapPin, ChevronDown, Navigation, Search } from 'lucide-react';
 import { useGeolocation } from '@/hooks/useGeolocation';
