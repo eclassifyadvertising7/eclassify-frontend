@@ -2,7 +2,7 @@
 
 ## Overview
 
-OTP-based authentication allows users to sign up and log in using their mobile number without requiring a password. The system uses a hardcoded OTP (1234) for development purposes (no DLT registration required).
+OTP-based authentication allows users to sign up and log in using their mobile number without requiring a password. The system uses a hardcoded 6-digit OTP (123456) for development purposes (no DLT registration required).
 
 **Key Features:**
 - Passwordless authentication via OTP
@@ -36,7 +36,8 @@ Send OTP to a mobile number for signup or login.
 {
   "mobile": "9175113022",
   "countryCode": "+91",
-  "type": "signup"
+  "type": "signup",
+  "channel": "sms"
 }
 ```
 
@@ -47,12 +48,18 @@ Send OTP to a mobile number for signup or login.
 | mobile | string | Yes | 10-digit mobile number (without country code) |
 | countryCode | string | No | Country code (default: +91) |
 | type | string | Yes | Type of OTP: `signup`, `login`, or `verification` |
+| channel | string | No | Delivery channel: `sms`, `email`, or `whatsapp` (default: sms) |
 
 **Validation Rules:**
 - `mobile`: Must be exactly 10 digits
 - `type`: Must be one of: `signup`, `login`, `verification`
+- `channel`: Must be one of: `sms`, `email`, `whatsapp`
 - For `signup`: Mobile number must NOT exist in database
 - For `login`: Mobile number must exist in database
+
+**Rate Limiting:**
+- Maximum 5 OTP requests per IP address per hour
+- Maximum 3 resends per mobile number per session (10 minutes)
 
 **Success Response (200 OK):**
 ```json
@@ -63,14 +70,21 @@ Send OTP to a mobile number for signup or login.
     "mobile": "9175113022",
     "countryCode": "+91",
     "type": "signup",
+    "channel": "sms",
     "expiresIn": 600,
+    "resendCount": 0,
     "otp": "1234"
   },
   "timestamp": "2025-12-08T10:30:00.000Z"
 }
 ```
 
-**Note:** The `otp` field is only included in development mode (`NODE_ENV=development`). Remove this in production.
+**Response Fields:**
+- `expiresIn`: OTP validity in seconds (600 = 10 minutes)
+- `resendCount`: Number of times OTP has been resent (0 for first send, max 3)
+- `otp`: Only included in development mode (`NODE_ENV=development`)
+
+**Note:** The `otp` field is only included in development mode. Remove this in production.
 
 **Error Responses:**
 
@@ -109,6 +123,26 @@ Send OTP to a mobile number for signup or login.
 {
   "success": false,
   "message": "Invalid OTP type. Must be signup, login, or verification",
+  "data": null,
+  "timestamp": "2025-12-08T10:30:00.000Z"
+}
+```
+
+**429 Too Many Requests - IP Rate Limit:**
+```json
+{
+  "success": false,
+  "message": "Too many OTP requests from this IP. Please try again later",
+  "data": null,
+  "timestamp": "2025-12-08T10:30:00.000Z"
+}
+```
+
+**429 Too Many Requests - Resend Limit:**
+```json
+{
+  "success": false,
+  "message": "Maximum OTP resend limit reached. Please try again later",
   "data": null,
   "timestamp": "2025-12-08T10:30:00.000Z"
 }
@@ -697,30 +731,55 @@ const OtpLogin = () => {
 
 ---
 
-## Security Notes
+## Security Features
 
-1. **Hardcoded OTP (Development Only)**
-   - Current OTP is hardcoded as `1234`
-   - Remove `otp` field from response in production
-   - Integrate SMS gateway when DLT is registered
+### 1. **Rate Limiting**
 
-2. **OTP Expiration**
-   - OTPs expire after 10 minutes
-   - Old OTPs are invalidated when new OTP is requested
+**IP-Based Rate Limiting:**
+- Maximum 5 OTP requests per IP address per hour
+- Prevents automated attacks and abuse
+- Tracked via `ip_address` field
 
-3. **Rate Limiting**
-   - Maximum 5 verification attempts per OTP
-   - Consider adding rate limiting on send OTP endpoint
+**Resend Limiting:**
+- Maximum 3 OTP resends per mobile number per session
+- Prevents SMS spam and cost abuse
+- Tracked via `resend_count` field
 
-4. **Auto-Generated Passwords**
-   - 10-character random passwords for OTP signups
-   - Stored as bcrypt hash
-   - Users can reset password later if needed
+**Verification Attempts:**
+- Maximum 5 verification attempts per OTP
+- Prevents brute force attacks
+- Tracked via `attempts` field
 
-5. **Phone Verification**
-   - Phone is marked as verified on successful OTP verification
-   - `isPhoneVerified` set to `true`
-   - `phoneVerifiedAt` timestamp recorded
+### 2. **OTP Expiration**
+- OTPs expire after 10 minutes
+- Old OTPs are automatically invalidated when new OTP is requested
+- Expired OTPs cannot be verified
+
+### 3. **Security Logging**
+- IP address tracking for all OTP requests
+- User agent logging for device fingerprinting
+- Audit trail with timestamps (created_at, verified_at)
+- Helps detect suspicious patterns and fraud
+
+### 4. **Multi-Channel Support**
+- Channel field supports: `sms`, `email`, `whatsapp`
+- Future-proof for multiple OTP delivery methods
+- Currently defaults to `sms`
+
+### 5. **Auto-Generated Passwords**
+- 10-character random passwords for OTP signups
+- Stored as bcrypt hash (salt rounds: 10)
+- Users can reset password later if needed
+
+### 6. **Phone Verification**
+- Phone is marked as verified on successful OTP verification
+- `isPhoneVerified` set to `true`
+- `phoneVerifiedAt` timestamp recorded
+
+### 7. **Development Mode**
+- Hardcoded OTP `1234` for development (no DLT required)
+- OTP included in response when `NODE_ENV=development`
+- Remove OTP from response in production
 
 ---
 

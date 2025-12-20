@@ -139,24 +139,41 @@ export const authService = {
   },
 
   // Send OTP for signup or login
-  sendOTP: async (mobile, type = 'login', countryCode = '+91') => {
-    return httpClient.post('/auth/otp/send', { 
+  sendOTP: async (mobile, type = 'login', countryCode = '+91', fullName = null, email = null) => {
+    const payload = { 
       mobile, 
       countryCode,
       type // 'signup', 'login', or 'verification'
-    });
+    };
+    
+    // Include fullName and email for signup
+    if (type === 'signup' && fullName) {
+      payload.fullName = fullName;
+    }
+    if (type === 'signup' && email) {
+      payload.email = email;
+    }
+    
+    return httpClient.post('/auth/otp/send', payload);
   },
 
   // Verify OTP for signup (requires fullName)
-  verifyOTPSignup: async (mobile, otp, fullName, countryCode = '+91', device_name = null) => {
-    const response = await httpClient.post('/auth/otp/verify', { 
+  verifyOTPSignup: async (mobile, otp, fullName, countryCode = '+91', device_name = null, email = null) => {
+    const payload = { 
       mobile, 
       otp, 
       type: 'signup',
       fullName,
       countryCode,
       device_name: device_name || (typeof navigator !== 'undefined' ? navigator.userAgent : 'Unknown Device')
-    });
+    };
+    
+    // Include email if provided
+    if (email) {
+      payload.email = email;
+    }
+    
+    const response = await httpClient.post('/auth/otp/verify', payload);
     
     if (response.success && response.data?.tokens) {
       const { access_token, refresh_token } = response.data.tokens;
@@ -177,6 +194,38 @@ export const authService = {
       mobile, 
       otp, 
       type: 'login',
+      countryCode,
+      device_name: device_name || (typeof navigator !== 'undefined' ? navigator.userAgent : 'Unknown Device')
+    });
+    
+    if (response.success && response.data?.tokens) {
+      const { access_token, refresh_token } = response.data.tokens;
+      
+      if (isValidToken(access_token) && isValidToken(refresh_token)) {
+        secureStorage.setItem('access_token', access_token);
+        secureStorage.setItem('refresh_token', refresh_token);
+        secureStorage.setItem('user', JSON.stringify(response.data.user));
+      }
+    }
+    
+    return response;
+  },
+
+  // Verify OTP (separate from signup)
+  verifyOTP: async (mobile, otp, countryCode = '+91') => {
+    return httpClient.post('/auth/otp/verify', { 
+      mobile, 
+      otp, 
+      countryCode
+    });
+  },
+
+  // Complete OTP-based signup (after OTP verification)
+  otpSignup: async (mobile, email, fullName, countryCode = '+91', device_name = null) => {
+    const response = await httpClient.post('/auth/otp/signup', {
+      mobile,
+      email,
+      fullName,
       countryCode,
       device_name: device_name || (typeof navigator !== 'undefined' ? navigator.userAgent : 'Unknown Device')
     });

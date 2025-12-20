@@ -1,8 +1,14 @@
 "use client"
 import { useState, useEffect } from "react"
-import { Heart, Search, SlidersHorizontal } from "lucide-react"
+import { Heart, Search, SlidersHorizontal, Filter } from "lucide-react"
 import Link from "next/link"
 import { browseCategoryListings } from "@/app/services/api/publicListingsService"
+import FilterPanel from "./filters/FilterPanel"
+import MobileFilterButton from "./filters/MobileFilterButton"
+import ActiveFilters from "./filters/ActiveFilters"
+import QuickFilters from "./filters/QuickFilters"
+import useFilters from "@/hooks/useFilters"
+import { useLocation } from "@/app/context/LocationContext"
 
 export default function CategoryListings({ categorySlug }) {
   const [listings, setListings] = useState([])
@@ -12,29 +18,17 @@ export default function CategoryListings({ categorySlug }) {
   const [pagination, setPagination] = useState(null)
   const [showFilters, setShowFilters] = useState(false)
 
-  const [filters, setFilters] = useState({
-    page: 1,
-    limit: 20,
-    search: "",
-    sortBy: "date_desc",
-    minPrice: "",
-    maxPrice: "",
-    stateId: "",
-    cityId: "",
-    isFeatured: false,
-    // Car filters
-    brandId: "",
-    modelId: "",
-    fuelType: "",
-    transmission: "",
-    condition: "",
-    minYear: "",
-    maxYear: "",
-    // Property filters
-    propertyType: "",
-    listingType: "",
-    bedrooms: "",
-    bathrooms: "",
+  const { getLocationForFilters } = useLocation()
+  
+  const { 
+    filters, 
+    updateFilter, 
+    updateMultipleFilters,
+    clearFilters,
+    removeFilter,
+    getActiveFiltersCount 
+  } = useFilters({
+    ...getLocationForFilters() // Initialize with location from context
   })
 
   useEffect(() => {
@@ -61,42 +55,14 @@ export default function CategoryListings({ categorySlug }) {
     }
   }
 
-  const handleFilterChange = (key, value) => {
-    setFilters(prev => ({
-      ...prev,
-      [key]: value,
-      page: 1
-    }))
-  }
-
   const handleApplyFilters = () => {
     fetchListings()
     setShowFilters(false)
   }
 
   const handleClearFilters = () => {
-    setFilters({
-      page: 1,
-      limit: 20,
-      search: "",
-      sortBy: "date_desc",
-      minPrice: "",
-      maxPrice: "",
-      stateId: "",
-      cityId: "",
-      isFeatured: false,
-      brandId: "",
-      modelId: "",
-      fuelType: "",
-      transmission: "",
-      condition: "",
-      minYear: "",
-      maxYear: "",
-      propertyType: "",
-      listingType: "",
-      bedrooms: "",
-      bathrooms: "",
-    })
+    clearFilters()
+    fetchListings()
   }
 
   const toggleFavorite = (e, listingId) => {
@@ -178,7 +144,7 @@ export default function CategoryListings({ categorySlug }) {
               type="text"
               placeholder="Search listings..."
               value={filters.search}
-              onChange={(e) => handleFilterChange("search", e.target.value)}
+              onChange={(e) => updateFilter("search", e.target.value)}
               onKeyPress={(e) => e.key === "Enter" && fetchListings()}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
             />
@@ -187,83 +153,56 @@ export default function CategoryListings({ categorySlug }) {
           {/* Sort */}
           <select
             value={filters.sortBy}
-            onChange={(e) => handleFilterChange("sortBy", e.target.value)}
+            onChange={(e) => updateFilter("sortBy", e.target.value)}
             className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
           >
-            <option value="date_desc">Newest First</option>
+            <option value="date_desc">Newly Posted First</option>
             <option value="date_asc">Oldest First</option>
             <option value="price_asc">Price: Low to High</option>
             <option value="price_desc">Price: High to Low</option>
-            <option value="views">Most Viewed</option>
+            <option value="views_desc">Most Viewed</option>
+            <option value="favorites_desc">Most Favorited</option>
           </select>
 
           {/* Filter Toggle */}
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-2 px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors relative"
           >
-            <SlidersHorizontal className="w-5 h-5" />
+            <Filter className="w-5 h-5" />
             Filters
+            {getActiveFiltersCount() > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                {getActiveFiltersCount()}
+              </span>
+            )}
           </button>
         </div>
-
-        {/* Filter Panel */}
-        {showFilters && (
-          <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-              {/* Price Range */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Min Price</label>
-                <input
-                  type="number"
-                  placeholder="Min"
-                  value={filters.minPrice}
-                  onChange={(e) => handleFilterChange("minPrice", e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Max Price</label>
-                <input
-                  type="number"
-                  placeholder="Max"
-                  value={filters.maxPrice}
-                  onChange={(e) => handleFilterChange("maxPrice", e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                />
-              </div>
-
-              {/* Featured Only */}
-              <div className="flex items-end">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={filters.isFeatured}
-                    onChange={(e) => handleFilterChange("isFeatured", e.target.checked)}
-                    className="w-4 h-4 text-cyan-600 rounded focus:ring-cyan-500"
-                  />
-                  <span className="text-sm font-medium text-gray-700">Featured Only</span>
-                </label>
-              </div>
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={handleApplyFilters}
-                className="px-6 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors"
-              >
-                Apply Filters
-              </button>
-              <button
-                onClick={handleClearFilters}
-                className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
-              >
-                Clear All
-              </button>
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* Filter Panel */}
+      <FilterPanel
+        filters={filters}
+        onFilterChange={updateFilter}
+        onApplyFilters={handleApplyFilters}
+        onClearFilters={handleClearFilters}
+        isOpen={showFilters}
+        onClose={() => setShowFilters(false)}
+        categorySlug={categorySlug}
+      />
+
+      {/* Quick Filters */}
+      <QuickFilters
+        onQuickFilter={(quickFilters) => updateMultipleFilters(quickFilters)}
+        categorySlug={categorySlug}
+      />
+
+      {/* Active Filters */}
+      <ActiveFilters
+        filters={filters}
+        onRemoveFilter={removeFilter}
+        onClearAll={handleClearFilters}
+      />
 
       {/* Results Count */}
       {pagination && (
@@ -335,7 +274,7 @@ export default function CategoryListings({ categorySlug }) {
             <div className="flex justify-center items-center gap-4 mt-8">
               <button
                 disabled={pagination.page === 1}
-                onClick={() => handleFilterChange("page", pagination.page - 1)}
+                onClick={() => updateFilter("page", pagination.page - 1)}
                 className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Previous
@@ -345,7 +284,7 @@ export default function CategoryListings({ categorySlug }) {
               </span>
               <button
                 disabled={pagination.page === pagination.totalPages}
-                onClick={() => handleFilterChange("page", pagination.page + 1)}
+                onClick={() => updateFilter("page", pagination.page + 1)}
                 className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Next
@@ -354,6 +293,12 @@ export default function CategoryListings({ categorySlug }) {
           )}
         </>
       )}
+
+      {/* Mobile Filter Button */}
+      <MobileFilterButton
+        onClick={() => setShowFilters(true)}
+        activeFiltersCount={getActiveFiltersCount()}
+      />
     </section>
   )
 }

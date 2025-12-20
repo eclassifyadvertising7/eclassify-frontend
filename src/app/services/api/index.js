@@ -18,3 +18,4 @@ export { default as listingService } from './listingService';
 export { default as dataRequestService } from './dataRequestService';
 export { default as carDataService } from './carDataService';
 export { default as subscriptionService } from './subscriptionService';
+export { default as favoritesService } from './favoritesService';

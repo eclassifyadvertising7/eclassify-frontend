@@ -5,16 +5,19 @@ import { initialSignInFormData, initialSignUpFormData, initialUpdateFormData } f
 import { uploadFile } from "../api/uploadImg";
 import { toast, Toaster } from "sonner";
 import { AuthProvider } from "./AuthContext";
+import { LocationProvider } from "./LocationContext";
 
 export const Context = createContext(null);
 
 export const ContextProvider = ({ children }) => {
   return (
     <AuthProvider>
-      <Context.Provider value={{}}>
-        <Toaster position="top-right" richColors />
-        {children}
-      </Context.Provider>
+      <LocationProvider>
+        <Context.Provider value={{}}>
+          <Toaster position="top-right" richColors />
+          {children}
+        </Context.Provider>
+      </LocationProvider>
     </AuthProvider>
   );
 };

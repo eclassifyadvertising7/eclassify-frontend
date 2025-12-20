@@ -7,17 +7,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
-import { Phone, Lock, User, Eye, EyeOff } from "lucide-react"
+import { Phone, Lock, Eye, EyeOff, Clock } from "lucide-react"
 import Link from "next/link"
 import Header from "@/components/Header"
 import Footer from "@/components/Footer"
 import { authService } from "@/app/services"
 import { useAuth } from "@/app/context/AuthContext"
 import { toast } from "sonner"
+import { OTPInput } from "@/components/ui/otp-input"
+import { useResendTimer } from "@/hooks/useResendTimer"
 
-export default function AuthPage() {
+export default function SignInPage() {
   const router = useRouter()
-  const { login, signup, isAuthenticated, updateUser } = useAuth()
+  const { login, isAuthenticated } = useAuth()
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -28,8 +30,7 @@ export default function AuthPage() {
     }
   }, [isAuthenticated, router])
   
-  // View State
-  const [isSignUp, setIsSignUp] = useState(false)
+  // Auth Method State
   const [authMethod, setAuthMethod] = useState("password") // "password" or "otp"
   
   // Common State
@@ -38,96 +39,47 @@ export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   
-  // Sign Up Specific
-  const [name, setName] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  
   // OTP State
   const [otp, setOtp] = useState("")
   const [otpSent, setOtpSent] = useState(false)
+  
+  // Resend Timer
+  const { timeLeft, canResend, startTimer, resetTimer } = useResendTimer(30)
 
-  // Handle Password Auth (Sign In or Sign Up)
-  const handlePasswordAuth = async (e) => {
+  // Handle Password Login
+  const handlePasswordLogin = async (e) => {
     e.preventDefault()
     
-    if (isSignUp) {
-      // Sign Up Validation
-      if (!name || !mobile || !password || !confirmPassword) {
-        toast.error("Please fill in all fields")
-        return
-      }
-      if (name.length < 2) {
-        toast.error("Name must be at least 2 characters")
-        return
-      }
-      if (mobile.length !== 10) {
-        toast.error("Please enter a valid 10-digit mobile number")
-        return
-      }
-      if (password.length < 6) {
-        toast.error("Password must be at least 6 characters")
-        return
-      }
-      if (password !== confirmPassword) {
-        toast.error("Passwords do not match")
-        return
-      }
+    // Sign In Validation
+    if (!mobile || !password) {
+      toast.error("Please enter mobile number and password")
+      return
+    }
+    if (mobile.length !== 10) {
+      toast.error("Please enter a valid 10-digit mobile number")
+      return
+    }
 
-      setLoading(true)
-      try {
-        const response = await signup({
-          fullName: name,
-          mobile: mobile,
-          password: password,
-          countryCode: "+91"
-        })
-        
-        const user = response?.data?.user
-        const redirectPath = (user?.role === "admin" || user?.role === "super_admin") ? "/admin" : "/"
-        
-        toast.success("Account created successfully!")
-        router.replace(redirectPath)
-      } catch (error) {
-        toast.error(error.message || "Signup failed. Please try again.")
-        setLoading(false)
-      }
-    } else {
-      // Sign In Validation
-      if (!mobile || !password) {
-        toast.error("Please enter mobile number and password")
-        return
-      }
-      if (mobile.length !== 10) {
-        toast.error("Please enter a valid 10-digit mobile number")
-        return
-      }
-
-      setLoading(true)
-      try {
-        const response = await login({
-          mobile: mobile,
-          password: password
-        })
-        
-        const user = response?.data?.user
-        const redirectPath = (user?.role === "admin" || user?.role === "super_admin") ? "/admin" : "/"
-        
-        toast.success("Login successful!")
-        router.replace(redirectPath)
-      } catch (error) {
-        toast.error(error.message || "Login failed. Please try again.")
-        setLoading(false)
-      }
+    setLoading(true)
+    try {
+      const response = await login({
+        mobile: mobile,
+        password: password
+      })
+      
+      const user = response?.data?.user
+      const redirectPath = (user?.role === "admin" || user?.role === "super_admin") ? "/admin" : "/"
+      
+      toast.success("Login successful!")
+      router.replace(redirectPath)
+    } catch (error) {
+      toast.error(error.message || "Login failed. Please try again.")
+      setLoading(false)
     }
   }
 
-  // Send OTP
+  // Send OTP for Login
   const handleSendOtp = async () => {
-    if (isSignUp && (!name || name.length < 2)) {
-      toast.error("Please enter your full name (at least 2 characters)")
-      return
-    }
     if (!mobile || mobile.length !== 10) {
       toast.error("Please enter a valid 10-digit mobile number")
       return
@@ -135,11 +87,11 @@ export default function AuthPage() {
 
     setLoading(true)
     try {
-      const type = isSignUp ? 'signup' : 'login'
-      const response = await authService.sendOTP(mobile, type)
+      const response = await authService.sendOTP(mobile, 'login')
       
       if (response.success) {
         setOtpSent(true)
+        startTimer()
         toast.success("OTP sent successfully!")
         
         // Auto-fill OTP in development mode
@@ -156,62 +108,60 @@ export default function AuthPage() {
     }
   }
 
-  // Verify OTP
+  // Verify OTP for Login
   const handleVerifyOtp = async (e) => {
     e.preventDefault()
     
-    if (!otp || otp.length !== 4) {
-      toast.error("Please enter a valid 4-digit OTP")
+    if (!otp || otp.length !== 6) {
+      toast.error("Please enter a valid 6-digit OTP")
       return
     }
 
     setLoading(true)
     try {
-      let response
-      
-      if (isSignUp) {
-        // Signup requires fullName
-        if (!name || name.length < 2) {
-          toast.error("Full name is required for signup")
-          setLoading(false)
-          return
-        }
-        response = await authService.verifyOTPSignup(mobile, otp, name)
-      } else {
-        // Login doesn't require fullName
-        response = await authService.verifyOTPLogin(mobile, otp)
-      }
+      const response = await authService.verifyOTPLogin(mobile, otp)
       
       if (response.success) {
         const user = response?.data?.user
         const redirectPath = (user?.role === "admin" || user?.role === "super_admin") ? "/admin" : "/"
         
-        toast.success(isSignUp ? "Account created successfully!" : "Login successful!")
-        
-        // Force page reload to update header with user info
-        window.location.href = redirectPath
+        toast.success("Login successful!")
+        router.replace(redirectPath)
       } else {
         toast.error(response.message || "Invalid OTP")
-        setLoading(false)
       }
     } catch (error) {
       toast.error(error.message || "OTP verification failed")
+    } finally {
       setLoading(false)
     }
   }
 
-  // Switch between Sign In and Sign Up
-  const toggleAuthMode = () => {
-    setIsSignUp(!isSignUp)
-    setAuthMethod("password")
-    setMobile("")
-    setPassword("")
-    setName("")
-    setConfirmPassword("")
-    setOtp("")
-    setOtpSent(false)
-    setShowPassword(false)
-    setShowConfirmPassword(false)
+  // Resend OTP
+  const handleResendOtp = async () => {
+    if (!canResend) return
+    
+    setLoading(true)
+    try {
+      const response = await authService.sendOTP(mobile, 'login')
+      
+      if (response.success) {
+        startTimer()
+        setOtp("")
+        toast.success("OTP resent successfully!")
+        
+        // Auto-fill OTP in development mode
+        if (process.env.NODE_ENV === 'development' && response.data?.otp) {
+          setOtp(response.data.otp)
+        }
+      } else {
+        toast.error(response.message || "Failed to resend OTP")
+      }
+    } catch (error) {
+      toast.error(error.message || "Failed to resend OTP")
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleGoogleAuth = () => {
@@ -229,30 +179,27 @@ export default function AuthPage() {
               eClassify
             </Link>
             <p className="text-gray-600 mt-2">
-              {isSignUp ? "Create your account to get started" : "Welcome back! Sign in to continue"}
+              Welcome back! Sign in to continue
             </p>
           </div>
 
           <Card className="shadow-xl border-0">
             <CardHeader className="text-center pb-4">
               <CardTitle className="text-2xl font-bold text-gray-900">
-                {isSignUp ? "Create Account" : "Sign In"}
+                Sign In
               </CardTitle>
               <CardDescription className="text-gray-500">
-                {isSignUp ? "Join our marketplace today" : "Access your account"}
+                Access your account
               </CardDescription>
-              {!isSignUp && (
-                <p className="text-sm text-gray-600 mt-3">
-                  Not registered yet?{" "}
-                  <button
-                    type="button"
-                    onClick={toggleAuthMode}
-                    className="font-semibold text-primary hover:text-cyan-600 transition-colors underline decoration-2 underline-offset-2"
-                  >
-                    Sign up here
-                  </button>
-                </p>
-              )}
+              <p className="text-sm text-gray-600 mt-3">
+                Not registered yet?{" "}
+                <Link
+                  href="/sign-up"
+                  className="font-semibold text-primary hover:text-cyan-600 transition-colors underline decoration-2 underline-offset-2"
+                >
+                  Sign up here
+                </Link>
+              </p>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Auth Method Toggle */}
@@ -265,6 +212,7 @@ export default function AuthPage() {
                     setAuthMethod("password")
                     setOtpSent(false)
                     setOtp("")
+                    resetTimer()
                   }}
                 >
                   <Lock className="h-4 w-4 mr-2" />
@@ -277,7 +225,9 @@ export default function AuthPage() {
                   onClick={() => {
                     setAuthMethod("otp")
                     setPassword("")
-                    setConfirmPassword("")
+                    setOtpSent(false)
+                    setOtp("")
+                    resetTimer()
                   }}
                 >
                   <Phone className="h-4 w-4 mr-2" />
@@ -287,24 +237,7 @@ export default function AuthPage() {
 
               {/* Password Auth Form */}
               {authMethod === "password" && (
-                <form onSubmit={handlePasswordAuth} className="space-y-4">
-                  {isSignUp && (
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Full Name</Label>
-                      <div className="relative">
-                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                        <Input
-                          id="name"
-                          type="text"
-                          placeholder="John Doe"
-                          className="pl-10"
-                          value={name}
-                          onChange={(e) => setName(e.target.value)}
-                        />
-                      </div>
-                    </div>
-                  )}
-                  
+                <form onSubmit={handlePasswordLogin} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="mobile">Mobile Number</Label>
                     <div className="relative">
@@ -328,7 +261,7 @@ export default function AuthPage() {
                       <Input
                         id="password"
                         type={showPassword ? "text" : "password"}
-                        placeholder={isSignUp ? "At least 6 characters" : "Enter your password"}
+                        placeholder="Enter your password"
                         className="pl-10 pr-10"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
@@ -343,57 +276,20 @@ export default function AuthPage() {
                     </div>
                   </div>
                   
-                  {isSignUp && (
-                    <div className="space-y-2">
-                      <Label htmlFor="confirm-password">Confirm Password</Label>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                        <Input
-                          id="confirm-password"
-                          type={showConfirmPassword ? "text" : "password"}
-                          placeholder="Re-enter password"
-                          className="pl-10 pr-10"
-                          value={confirmPassword}
-                          onChange={(e) => setConfirmPassword(e.target.value)}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                        >
-                          {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                  
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? (isSignUp ? "Creating account..." : "Signing in...") : (isSignUp ? "Create Account" : "Sign In")}
+                  <Button 
+                    type="submit" 
+                    className="w-full" 
+                    disabled={loading}
+                  >
+                    {loading ? "Signing in..." : "Sign In"}
                   </Button>
                 </form>
               )}
 
+
               {/* OTP Auth Form */}
               {authMethod === "otp" && (
                 <form onSubmit={handleVerifyOtp} className="space-y-4">
-                  {isSignUp && (
-                    <div className="space-y-2">
-                      <Label htmlFor="name-otp">Full Name</Label>
-                      <div className="relative">
-                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                        <Input
-                          id="name-otp"
-                          type="text"
-                          placeholder="John Doe"
-                          className="pl-10"
-                          value={name}
-                          onChange={(e) => setName(e.target.value)}
-                          disabled={otpSent}
-                        />
-                      </div>
-                    </div>
-                  )}
-                  
                   <div className="space-y-2">
                     <Label htmlFor="mobile-otp">Mobile Number</Label>
                     <div className="flex gap-2">
@@ -426,32 +322,56 @@ export default function AuthPage() {
 
                   {otpSent && (
                     <>
-                      <div className="space-y-2">
-                        <Label htmlFor="otp">Enter OTP</Label>
-                        <Input
-                          id="otp"
-                          type="text"
-                          placeholder="Enter 4-digit OTP"
-                          maxLength={4}
+                      <div className="space-y-3">
+                        <Label htmlFor="otp" className="text-center block">Enter 6-digit OTP</Label>
+                        <OTPInput
+                          length={6}
                           value={otp}
-                          onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                          className="text-center text-lg tracking-widest"
+                          onChange={setOtp}
+                          disabled={loading}
                         />
+                        <p className="text-sm text-gray-600 text-center">
+                          OTP sent to +91 {mobile}
+                        </p>
                       </div>
-                      <Button type="submit" className="w-full" disabled={loading}>
-                        {loading ? "Verifying..." : (isSignUp ? "Verify & Create Account" : "Verify & Sign In")}
+                      
+                      <Button type="submit" className="w-full" disabled={loading || otp.length !== 6}>
+                        {loading ? "Verifying..." : "Verify & Sign In"}
                       </Button>
-                      <Button
-                        type="button"
-                        variant="link"
-                        className="text-sm w-full text-gray-600"
-                        onClick={() => {
-                          setOtpSent(false)
-                          setOtp("")
-                        }}
-                      >
-                        Change number
-                      </Button>
+                      
+                      <div className="flex items-center justify-between text-sm">
+                        <Button
+                          type="button"
+                          variant="link"
+                          className="text-gray-600 p-0 h-auto"
+                          onClick={() => {
+                            setOtpSent(false)
+                            setOtp("")
+                            resetTimer()
+                          }}
+                        >
+                          Change number
+                        </Button>
+                        
+                        <div className="flex items-center gap-2">
+                          {canResend ? (
+                            <Button
+                              type="button"
+                              variant="link"
+                              className="text-primary p-0 h-auto font-semibold"
+                              onClick={handleResendOtp}
+                              disabled={loading}
+                            >
+                              Resend OTP
+                            </Button>
+                          ) : (
+                            <div className="flex items-center gap-1 text-gray-500">
+                              <Clock className="h-3 w-3" />
+                              <span>Resend in {timeLeft}s</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </>
                   )}
                 </form>
@@ -475,21 +395,7 @@ export default function AuthPage() {
                 <span className="font-medium">Google</span>
               </Button>
 
-              {/* Toggle Sign In / Sign Up */}
-              {isSignUp && (
-                <div className="text-center pt-4 border-t">
-                  <p className="text-sm text-gray-600">
-                    Already have an account?{" "}
-                    <button
-                      type="button"
-                      onClick={toggleAuthMode}
-                      className="font-semibold text-primary hover:text-cyan-600 transition-colors underline decoration-2 underline-offset-2"
-                    >
-                      Sign in here
-                    </button>
-                  </p>
-                </div>
-              )}
+
             </CardContent>
           </Card>
 
