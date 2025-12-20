@@ -143,7 +143,7 @@ export default function QRCodeUploadModal({ isOpen, onClose, onSuccess }) {
               type="text"
               value={formData.upiId}
               onChange={(e) => setFormData({ ...formData, upiId: e.target.value })}
-              placeholder="yourname@paytm"
+              placeholder="Enter your UPI ID"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
               required
             />
