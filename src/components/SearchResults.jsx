@@ -7,6 +7,8 @@ import MobileFilterButton from "./filters/MobileFilterButton"
 import ActiveFilters from "./filters/ActiveFilters"
 import useFilters from "@/hooks/useFilters"
 import { searchListings, logSearchActivity } from "@/app/services/api/searchService"
+import { useAuth } from "@/app/context/AuthContext"
+import Tooltip from "@/components/ui/tooltip"
 
 export default function SearchResults({ initialQuery = '', initialCategory = '' }) {
   const [listings, setListings] = useState([])
@@ -15,6 +17,7 @@ export default function SearchResults({ initialQuery = '', initialCategory = '' 
   const [favorites, setFavorites] = useState(new Set())
   const [pagination, setPagination] = useState(null)
   const [showFilters, setShowFilters] = useState(false)
+  const { isAuthenticated } = useAuth()
 
   const { 
     filters, 
@@ -75,6 +78,13 @@ export default function SearchResults({ initialQuery = '', initialCategory = '' 
 
   const toggleFavorite = (e, listingId) => {
     e.preventDefault()
+    e.stopPropagation()
+    
+    if (!isAuthenticated) {
+      // Don't do anything for non-authenticated users
+      return
+    }
+    
     const newFavorites = new Set(favorites)
     if (newFavorites.has(listingId)) {
       newFavorites.delete(listingId)
@@ -235,16 +245,28 @@ export default function SearchResults({ initialQuery = '', initialCategory = '' 
                             Featured
                           </div>
                         )}
-                        <button
-                          onClick={(e) => toggleFavorite(e, listing.id)}
-                          className="absolute top-3 right-3 bg-white rounded-full p-2 shadow-md hover:shadow-lg transition-shadow duration-200"
+                        <Tooltip 
+                          content={!isAuthenticated ? "Please sign in to add favorites" : null}
+                          position="bottom"
                         >
-                          <Heart
-                            className={`w-5 h-5 ${
-                              favorites.has(listing.id) ? "fill-red-500 text-red-500" : "text-gray-400 hover:text-red-500"
-                            } transition-colors duration-200`}
-                          />
-                        </button>
+                          <button
+                            onClick={(e) => toggleFavorite(e, listing.id)}
+                            className={`absolute top-3 right-3 bg-white rounded-full p-2 shadow-md hover:shadow-lg transition-shadow duration-200 ${
+                              !isAuthenticated ? 'cursor-not-allowed opacity-75' : ''
+                            }`}
+                            disabled={!isAuthenticated}
+                          >
+                            <Heart
+                              className={`w-5 h-5 ${
+                                isAuthenticated && favorites.has(listing.id) 
+                                  ? "fill-red-500 text-red-500" 
+                                  : isAuthenticated 
+                                    ? "text-gray-400 hover:text-red-500" 
+                                    : "text-gray-400"
+                              } transition-colors duration-200`}
+                            />
+                          </button>
+                        </Tooltip>
                       </div>
 
                       <div className="p-4">

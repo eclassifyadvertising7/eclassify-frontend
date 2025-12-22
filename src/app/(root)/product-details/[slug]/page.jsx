@@ -7,20 +7,22 @@ import FooterSection from "@/components/Footer"
 import Tooltip from "@/components/ui/tooltip"
 import { getListingBySlug, incrementListingView } from "@/app/services/api/publicListingsService"
 import { createOrGetChatRoom } from "@/app/services/api/chatService"
+import { favoritesService } from "@/app/services"
 import { toast } from "sonner"
 import { getPostedByTypeBadge } from "@/lib/utils"
 import { canIncrementView, recordView, cleanupOldViews } from "@/lib/viewTracking"
+import { useAuth } from "@/app/context/AuthContext"
 
 export default function ProductDetails() {
   const params = useParams()
   const router = useRouter()
   const slug = params.slug
+  const { isAuthenticated, user } = useAuth()
 
   const [listing, setListing] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [selectedImage, setSelectedImage] = useState(0)
-  const [isFavorite, setIsFavorite] = useState(false)
   const [message, setMessage] = useState("")
   const [creatingChat, setCreatingChat] = useState(false)
 
@@ -40,6 +42,21 @@ export default function ProductDetails() {
       
       if (result.success) {
         setListing(result.data)
+        
+        // Check if listing is favorited by current user
+        if (isAuthenticated) {
+          try {
+            const favoriteResponse = await favoritesService.checkIsFavorited(result.data.id);
+            if (favoriteResponse.success) {
+              setListing(prev => ({
+                ...prev,
+                isFavorited: favoriteResponse.data.isFavorited
+              }));
+            }
+          } catch (error) {
+            console.error('Error checking favorite status:', error);
+          }
+        }
         
         // Increment view count only if not viewed in last hour
         if (canIncrementView(result.data.id)) {
@@ -77,10 +94,8 @@ export default function ProductDetails() {
   }
 
   const handleChatClick = async () => {
-    // Check if user is logged in
-    const user = JSON.parse(localStorage.getItem('user') || '{}')
-    if (!user.id) {
-      toast.error('Please login to chat with seller')
+    if (!isAuthenticated) {
+      toast.error('Please sign in to chat with seller')
       router.push('/sign-in')
       return
     }
@@ -106,7 +121,56 @@ export default function ProductDetails() {
     }
   }
 
+  const handleFavoriteToggle = async () => {
+    if (!isAuthenticated) {
+      return // Tooltip will show the message
+    }
+
+    try {
+      if (listing.isFavorited) {
+        // Remove from favorites
+        await favoritesService.removeFromFavorites(listing.id);
+        const updatedListing = {
+          ...listing,
+          isFavorited: false,
+          favoriteCount: Math.max((listing.favoriteCount || 0) - 1, 0)
+        };
+        setListing(updatedListing);
+        toast.success('Removed from favorites');
+      } else {
+        // Add to favorites
+        await favoritesService.addToFavorites(listing.id);
+        const updatedListing = {
+          ...listing,
+          isFavorited: true,
+          favoriteCount: (listing.favoriteCount || 0) + 1
+        };
+        setListing(updatedListing);
+        toast.success('Added to favorites!');
+      }
+    } catch (error) {
+      console.error('Favorite toggle error:', error);
+      if (error.status === 400 && !listing.isFavorited) {
+        toast.error('Already in favorites');
+        // Update local state to reflect server state
+        setListing(prev => ({ ...prev, isFavorited: true }));
+      } else if (error.status === 404 && listing.isFavorited) {
+        toast.error('Not found in favorites');
+        // Update local state to reflect server state
+        setListing(prev => ({ ...prev, isFavorited: false }));
+      } else {
+        toast.error('Failed to update favorite status');
+      }
+    }
+  }
+
   const handleCallClick = async () => {
+    if (!isAuthenticated) {
+      toast.error('Please sign in to contact seller')
+      router.push('/sign-in')
+      return
+    }
+
     // Increment view count when user clicks call button
     if (listing && canIncrementView(listing.id)) {
       await incrementListingView(listing.id)
@@ -118,17 +182,7 @@ export default function ProductDetails() {
   }
 
   // Check if current user owns this listing
-  const getCurrentUser = () => {
-    if (typeof window === 'undefined') return null
-    try {
-      return JSON.parse(localStorage.getItem('user') || '{}')
-    } catch {
-      return null
-    }
-  }
-  
-  const currentUser = getCurrentUser()
-  const isOwnListing = currentUser?.id && listing?.userId === currentUser.id
+  const isOwnListing = isAuthenticated && user?.id && listing?.userId === user.id
 
   if (loading) {
     return (
@@ -185,12 +239,22 @@ export default function ProductDetails() {
                 alt={listing.title}
                 className="w-full h-full object-scale-down rounded-lg shadow-lg"
               />
-              <button
-                onClick={() => setIsFavorite(!isFavorite)}
-                className="absolute top-4 right-4 p-2 bg-white rounded-full shadow-md hover:shadow-lg transition-shadow"
+              <Tooltip 
+                content={!isAuthenticated ? "Please sign in to add favorites" : null}
+                position="left"
               >
-                <Heart className={`w-5 h-5 ${isFavorite ? "fill-red-500 text-red-500" : "text-gray-400"}`} />
-              </button>
+                <button
+                  onClick={handleFavoriteToggle}
+                  className={`absolute top-4 right-4 p-2 bg-white rounded-full shadow-md hover:shadow-lg transition-shadow ${
+                    !isAuthenticated ? 'cursor-not-allowed opacity-75' : ''
+                  }`}
+                  disabled={!isAuthenticated}
+                >
+                  <Heart className={`w-5 h-5 ${
+                    isAuthenticated && listing?.isFavorited ? "fill-red-500 text-red-500" : "text-gray-400"
+                  }`} />
+                </button>
+              </Tooltip>
             </div>
 
             {/* Thumbnail Images */}
@@ -345,10 +409,21 @@ export default function ProductDetails() {
             <div className="bg-white rounded-lg shadow-md p-6">
               <div className="flex items-start justify-between mb-2">
                 <h1 className="text-2xl font-bold text-gray-900">{listing.title}</h1>
-                <Heart
-                  className={`w-6 h-6 cursor-pointer ${isFavorite ? "fill-red-500 text-red-500" : "text-gray-400"}`}
-                  onClick={() => setIsFavorite(!isFavorite)}
-                />
+                <Tooltip 
+                  content={!isAuthenticated ? "Please sign in to add favorites" : null}
+                  position="left"
+                >
+                  <Heart
+                    className={`w-6 h-6 ${
+                      isAuthenticated && listing?.isFavorited 
+                        ? "fill-red-500 text-red-500 cursor-pointer" 
+                        : isAuthenticated 
+                          ? "text-gray-400 cursor-pointer hover:text-red-500" 
+                          : "text-gray-400 cursor-not-allowed opacity-75"
+                    } transition-colors`}
+                    onClick={handleFavoriteToggle}
+                  />
+                </Tooltip>
               </div>
               <p className="text-3xl font-bold text-cyan-600 mb-2">{formatPrice(listing.price)}</p>
               {listing.priceNegotiable && (
@@ -386,20 +461,32 @@ export default function ProductDetails() {
 
                   {/* Action Buttons */}
                   <div className="grid grid-cols-2 gap-3 mb-4">
-                    <Tooltip content={isOwnListing ? 'Cannot chat on your own listing' : 'Chat with seller'}>
+                    <Tooltip content={
+                      !isAuthenticated 
+                        ? 'Please sign in to chat with seller' 
+                        : isOwnListing 
+                          ? 'Cannot chat on your own listing' 
+                          : 'Chat with seller'
+                    }>
                       <button 
                         onClick={handleChatClick}
-                        disabled={isOwnListing || creatingChat}
+                        disabled={!isAuthenticated || isOwnListing || creatingChat}
                         className="flex items-center justify-center gap-2 bg-gray-900 text-white px-4 py-3 rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed w-full"
                       >
                         <MessageCircle className="w-4 h-4" />
                         {creatingChat ? 'Loading...' : 'Chat'}
                       </button>
                     </Tooltip>
-                    <Tooltip content={isOwnListing ? 'Cannot call yourself' : 'Call seller'}>
+                    <Tooltip content={
+                      !isAuthenticated 
+                        ? 'Please sign in to contact seller' 
+                        : isOwnListing 
+                          ? 'Cannot call yourself' 
+                          : 'Call seller'
+                    }>
                       <button 
                         onClick={handleCallClick}
-                        disabled={isOwnListing}
+                        disabled={!isAuthenticated || isOwnListing}
                         className="flex items-center justify-center gap-2 bg-cyan-600 text-white px-4 py-3 rounded-lg hover:bg-cyan-700 transition-colors disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed w-full"
                       >
                         <Phone className="w-4 h-4" />
@@ -420,6 +507,13 @@ export default function ProductDetails() {
                   <span className="font-medium">{listing.viewCount || 0}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">Favorites</span>
+                  <span className="font-medium flex items-center gap-1">
+                    <Heart className="w-4 h-4 text-red-500" />
+                    {listing.favoriteCount || 0}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-600">Category</span>
                   <span className="font-medium">{listing.category?.name}</span>
                 </div>
@@ -438,14 +532,20 @@ export default function ProductDetails() {
               <textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="Type your message here..."
-                disabled={isOwnListing}
+                placeholder={!isAuthenticated ? "Please sign in to send messages" : "Type your message here..."}
+                disabled={!isAuthenticated || isOwnListing}
                 className="w-full h-24 p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
               />
-              <Tooltip content={isOwnListing ? 'Cannot send message to your own listing' : 'Send message to seller'}>
+              <Tooltip content={
+                !isAuthenticated 
+                  ? 'Please sign in to send messages' 
+                  : isOwnListing 
+                    ? 'Cannot send message to your own listing' 
+                    : 'Send message to seller'
+              }>
                 <div className="w-full mt-3">
                   <button 
-                    disabled={isOwnListing}
+                    disabled={!isAuthenticated || isOwnListing}
                     className="w-full bg-cyan-600 text-white py-3 rounded-lg hover:bg-cyan-700 transition-colors disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
                   >
                     Send Message
@@ -470,7 +570,17 @@ export default function ProductDetails() {
             {/* Ad ID */}
             <div className="text-center">
               <p className="text-sm text-gray-500">AD# {listing.id}</p>
-              <button className="text-cyan-600 text-sm hover:underline">Report this ad</button>
+              <Tooltip content={!isAuthenticated ? "Please sign in to report ads" : "Report this ad"}>
+                <button 
+                  className={`text-cyan-600 text-sm hover:underline ${
+                    !isAuthenticated ? 'cursor-not-allowed opacity-75' : ''
+                  }`}
+                  disabled={!isAuthenticated}
+                  onClick={() => isAuthenticated ? toast.info('Report functionality coming soon') : null}
+                >
+                  Report this ad
+                </button>
+              </Tooltip>
             </div>
           </div>
         </div>

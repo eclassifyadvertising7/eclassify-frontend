@@ -5,24 +5,50 @@ import FooterSection from "@/components/Footer"
 import Header from "@/components/Header"
 import { Splide, SplideSlide } from "@splidejs/react-splide"
 import "@splidejs/react-splide/css"
-import { subscriptionService } from "@/app/services/api"
+import { subscriptionService, categoryService } from "@/app/services/api"
 import ManualPaymentModal from "@/components/ManualPaymentModal"
 
 export default function PricingPlans() {
+  const [categories, setCategories] = useState([])
+  const [selectedCategory, setSelectedCategory] = useState(null)
   const [plans, setPlans] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [paymentModal, setPaymentModal] = useState({ isOpen: false, plan: null })
 
   useEffect(() => {
-    fetchPlans()
+    fetchCategories()
   }, [])
 
-  const fetchPlans = async () => {
+  useEffect(() => {
+    if (selectedCategory) {
+      fetchPlansByCategory(selectedCategory.id)
+    }
+  }, [selectedCategory])
+
+  const fetchCategories = async () => {
     try {
       setLoading(true)
       setError(null)
-      const data = await subscriptionService.getPlans()
+      const response = await categoryService.getActiveCategories()
+      if (response.success && response.data?.length > 0) {
+        setCategories(response.data)
+        // Auto-select first category
+        setSelectedCategory(response.data[0])
+      } else {
+        setError("No categories available.")
+      }
+    } catch (err) {
+      console.error("Failed to fetch categories:", err)
+      setError("Failed to load categories. Please try again later.")
+    }
+  }
+
+  const fetchPlansByCategory = async (categoryId) => {
+    try {
+      setLoading(true)
+      setError(null)
+      const data = await subscriptionService.getPlansByCategory(categoryId)
       setPlans(data)
     } catch (err) {
       console.error("Failed to fetch plans:", err)
@@ -41,6 +67,18 @@ export default function PricingPlans() {
     }
     const symbol = currencySymbols[currency] || currency
     return `${symbol}${parseFloat(price).toFixed(0)}`
+  }
+
+  const formatBillingCycle = (billingCycle) => {
+    const formatMap = {
+      'daily': 'day',
+      'weekly': 'week', 
+      'monthly': 'month',
+      'quarterly': 'quarter',
+      'annual': 'year',
+      'one_time': 'one time'
+    }
+    return formatMap[billingCycle] || billingCycle
   }
 
   const getPlanFeatures = (plan) => {
@@ -74,12 +112,59 @@ export default function PricingPlans() {
     return features
   }
 
+  const handleCategoryChange = (category) => {
+    setSelectedCategory(category)
+  }
+
+  const handleRetry = () => {
+    if (selectedCategory) {
+      fetchPlansByCategory(selectedCategory.id)
+    } else {
+      fetchCategories()
+    }
+  }
+
   return (
     <>
       <Header />
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4">
-          <h2 className="text-3xl font-bold text-gray-800 mb-12 text-center">Ad Listing Plan</h2>
+          <h2 className="text-3xl font-bold text-gray-800 mb-8 text-center">Choose Your Category & Plan</h2>
+
+          {/* Category Selection */}
+          {categories.length > 0 && (
+            <div className="flex justify-center mb-12">
+              <div className="flex flex-wrap gap-4 p-2 bg-gray-100 rounded-lg">
+                {categories.map((category) => (
+                  <button
+                    key={category.id}
+                    onClick={() => handleCategoryChange(category)}
+                    className={`px-6 py-3 rounded-lg font-medium transition-all duration-300 ${
+                      selectedCategory?.id === category.id
+                        ? "bg-primary text-white shadow-md"
+                        : "bg-white text-gray-700 hover:bg-gray-50"
+                    }`}
+                  >
+                    {category.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Selected Category Info */}
+          {selectedCategory && (
+            <div className="text-center mb-8">
+              <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                {selectedCategory.name} Plans
+              </h3>
+              {selectedCategory.description && (
+                <p className="text-gray-600 max-w-2xl mx-auto">
+                  {selectedCategory.description}
+                </p>
+              )}
+            </div>
+          )}
 
           {loading && (
             <div className="text-center py-12">
@@ -92,7 +177,7 @@ export default function PricingPlans() {
             <div className="text-center py-12">
               <p className="text-red-600 mb-4">{error}</p>
               <button
-                onClick={fetchPlans}
+                onClick={handleRetry}
                 className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
               >
                 Retry
@@ -100,9 +185,9 @@ export default function PricingPlans() {
             </div>
           )}
 
-          {!loading && !error && plans.length === 0 && (
+          {!loading && !error && selectedCategory && plans.length === 0 && (
             <div className="text-center py-12">
-              <p className="text-gray-600">No pricing plans available at the moment.</p>
+              <p className="text-gray-600">No pricing plans available for {selectedCategory.name} at the moment.</p>
             </div>
           )}
 
@@ -161,7 +246,7 @@ export default function PricingPlans() {
                           <span className="text-3xl font-bold text-gray-900">
                             {formatPrice(plan.finalPrice, plan.currency)}
                           </span>
-                          <span className="text-sm text-gray-500">/{plan.billingCycle}</span>
+                          <span className="text-sm text-gray-500">/{formatBillingCycle(plan.billingCycle)}</span>
                         </div>
                       </div>
 

@@ -242,6 +242,56 @@ export const authService = {
     
     return response;
   },
+
+  // Google OAuth Authentication
+  initiateGoogleAuth: (device_name = null) => {
+    const deviceName = device_name || (typeof navigator !== 'undefined' ? navigator.userAgent : 'Unknown Device');
+    const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000/api';
+    const authUrl = `${API_BASE_URL}/auth/google?device_name=${encodeURIComponent(deviceName)}`;
+    
+    if (typeof window !== 'undefined') {
+      window.location.href = authUrl;
+    }
+    
+    return authUrl;
+  },
+
+  // Handle Google OAuth callback data
+  handleGoogleCallback: (encodedData) => {
+    try {
+      const response = JSON.parse(decodeURIComponent(encodedData));
+      
+      if (response.success && response.data?.tokens) {
+        const { access_token, refresh_token } = response.data.tokens;
+        
+        if (isValidToken(access_token) && isValidToken(refresh_token)) {
+          secureStorage.setItem('access_token', access_token);
+          secureStorage.setItem('refresh_token', refresh_token);
+          secureStorage.setItem('user', JSON.stringify(response.data.user));
+        }
+      }
+      
+      return response;
+    } catch (error) {
+      console.error('Error parsing Google callback data:', error);
+      throw new Error('Invalid callback data');
+    }
+  },
+
+  // Complete Google user profile (add mobile number)
+  completeGoogleProfile: async (mobile, countryCode = '+91') => {
+    const response = await httpClient.post('/auth/google/complete-profile', {
+      mobile,
+      countryCode
+    });
+    
+    // Update user data in localStorage if successful
+    if (response.success && response.data) {
+      secureStorage.setItem('user', JSON.stringify(response.data));
+    }
+    
+    return response;
+  },
 };
 
 export default authService;

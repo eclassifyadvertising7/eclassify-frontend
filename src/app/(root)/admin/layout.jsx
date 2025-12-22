@@ -44,7 +44,7 @@ export default function AdminLayout({ children }) {
   }
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="admin-layout flex h-screen bg-gray-100 overflow-hidden">
       <AdminSidebar
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
@@ -57,7 +57,7 @@ export default function AdminLayout({ children }) {
         />
 
         {/* Content */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-6 scrollbar-thin">
           {children}
         </main>
       </div>

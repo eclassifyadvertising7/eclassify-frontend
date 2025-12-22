@@ -165,7 +165,11 @@ export default function SignInPage() {
   }
 
   const handleGoogleAuth = () => {
-    toast.info("Google authentication coming soon!")
+    try {
+      authService.initiateGoogleAuth()
+    } catch (error) {
+      toast.error("Failed to initiate Google authentication")
+    }
   }
 
   return (
