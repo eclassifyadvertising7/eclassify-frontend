@@ -180,6 +180,14 @@ export default function SignUpPage() {
     }
   }
 
+  const handleGoogleAuth = () => {
+    try {
+      authService.initiateGoogleAuth()
+    } catch (error) {
+      toast.error("Failed to initiate Google authentication")
+    }
+  }
+
   return (
     <>
       <Header />
@@ -393,7 +401,7 @@ export default function SignUpPage() {
               <Button
                 variant="outline"
                 className="w-full flex items-center justify-center gap-3 hover:bg-gray-50"
-                onClick={() => toast.info("Google authentication coming soon!")}
+                onClick={handleGoogleAuth}
               >
                 <img src="./assets/img/google.png" alt="Google" className="w-5 h-5" />
                 <span className="font-medium">Google</span>

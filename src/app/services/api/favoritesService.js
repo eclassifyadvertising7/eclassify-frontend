@@ -13,7 +13,7 @@ class FavoritesService {
    */
   async addToFavorites(listingId) {
     try {
-      const response = await httpClient.post('/end-user/favorites', {
+      const response = await httpClient.post('/end-user/create/favorites', {
         listingId: parseInt(listingId)
       });
       return response;
@@ -30,7 +30,7 @@ class FavoritesService {
    */
   async removeFromFavorites(listingId) {
     try {
-      const response = await httpClient.delete(`/end-user/favorites/${listingId}`);
+      const response = await httpClient.delete(`/end-user/delete/favorites/${listingId}`);
       return response;
     } catch (error) {
       console.error('Error removing from favorites:', error);
@@ -74,7 +74,7 @@ class FavoritesService {
       if (priceMin) queryParams.append('priceMin', priceMin.toString());
       if (priceMax) queryParams.append('priceMax', priceMax.toString());
 
-      const response = await httpClient.get(`/end-user/favorites?${queryParams.toString()}`);
+      const response = await httpClient.get(`/end-user/get/favorites?${queryParams.toString()}`);
       return response;
     } catch (error) {
       console.error('Error fetching user favorites:', error);
@@ -89,7 +89,7 @@ class FavoritesService {
    */
   async checkIsFavorited(listingId) {
     try {
-      const response = await httpClient.get(`/end-user/favorites/check/${listingId}`);
+      const response = await httpClient.get(`/end-user/check/${listingId}`);
       return response;
     } catch (error) {
       console.error('Error checking favorite status:', error);
@@ -103,7 +103,7 @@ class FavoritesService {
    */
   async getFavoriteStats() {
     try {
-      const response = await httpClient.get('/end-user/favorites/stats');
+      const response = await httpClient.get('/end-user/stats');
       return response;
     } catch (error) {
       console.error('Error fetching favorite stats:', error);
@@ -136,7 +136,7 @@ class FavoritesService {
       if (startDate) queryParams.append('startDate', startDate);
       if (endDate) queryParams.append('endDate', endDate);
 
-      const response = await httpClient.get(`/panel/favorites/analytics/most-favorited?${queryParams.toString()}`);
+      const response = await httpClient.get(`/panel/analytics/most-favorited?${queryParams.toString()}`);
       return response;
     } catch (error) {
       console.error('Error fetching most favorited listings:', error);
@@ -160,7 +160,7 @@ class FavoritesService {
       if (startDate) queryParams.append('startDate', startDate);
       if (endDate) queryParams.append('endDate', endDate);
 
-      const response = await httpClient.get(`/panel/favorites/analytics/stats?${queryParams.toString()}`);
+      const response = await httpClient.get(`/panel/analytics/stats?${queryParams.toString()}`);
       return response;
     } catch (error) {
       console.error('Error fetching favorite analytics:', error);
@@ -169,19 +169,80 @@ class FavoritesService {
   }
 
   /**
-   * Get favorite count for a specific listing (for listing owners and admins)
-   * This would typically be included in listing details API, but can be called separately
+   * Get favorite count for a specific listing (Public endpoint - no auth required)
    * @param {number} listingId - ID of the listing
    * @returns {Promise} API response with favorite count
    */
   async getListingFavoriteCount(listingId) {
     try {
-      // This endpoint might be part of listing details API
-      // For now, we'll use the most favorited endpoint with specific listing filter
-      const response = await httpClient.get(`/panel/favorites/analytics/most-favorited?limit=1&listingId=${listingId}`);
+      const response = await httpClient.get(`/public/listings/${listingId}/favorite-count`);
       return response;
     } catch (error) {
       console.error('Error fetching listing favorite count:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get favorites by category breakdown (Admin/Staff only)
+   * @param {Object} params - Query parameters
+   * @param {number} params.userId - Filter by specific user
+   * @param {string} params.startDate - Start date (ISO format)
+   * @param {string} params.endDate - End date (ISO format)
+   * @returns {Promise} API response with category breakdown
+   */
+  async getFavoritesByCategory(params = {}) {
+    try {
+      const queryParams = new URLSearchParams();
+      
+      const { userId, startDate, endDate } = params;
+      
+      if (userId) queryParams.append('userId', userId.toString());
+      if (startDate) queryParams.append('startDate', startDate);
+      if (endDate) queryParams.append('endDate', endDate);
+
+      const response = await httpClient.get(`/panel/analytics/by-category?${queryParams.toString()}`);
+      return response;
+    } catch (error) {
+      console.error('Error fetching favorites by category:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get specific user's favorites (Admin view)
+   * @param {number} userId - ID of the user
+   * @param {Object} params - Query parameters (same as getUserFavorites)
+   * @returns {Promise} API response with user's favorites
+   */
+  async getUserFavoritesAdmin(userId, params = {}) {
+    try {
+      const queryParams = new URLSearchParams();
+      
+      // Set defaults and add parameters
+      const {
+        page = 1,
+        limit = 20,
+        categoryId,
+        priceMin,
+        priceMax,
+        sortBy = 'created_at',
+        sortOrder = 'DESC'
+      } = params;
+
+      queryParams.append('page', page.toString());
+      queryParams.append('limit', Math.min(limit, 50).toString());
+      queryParams.append('sortBy', sortBy);
+      queryParams.append('sortOrder', sortOrder);
+
+      if (categoryId) queryParams.append('categoryId', categoryId.toString());
+      if (priceMin) queryParams.append('priceMin', priceMin.toString());
+      if (priceMax) queryParams.append('priceMax', priceMax.toString());
+
+      const response = await httpClient.get(`/panel/user/${userId}?${queryParams.toString()}`);
+      return response;
+    } catch (error) {
+      console.error('Error fetching user favorites (admin):', error);
       throw error;
     }
   }

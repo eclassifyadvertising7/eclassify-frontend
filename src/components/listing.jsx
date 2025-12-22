@@ -5,6 +5,10 @@ import Link from "next/link"
 import Image from "next/image"
 import { getHomepageListings } from "@/app/services/api/publicListingsService"
 import { getPostedByTypeBadge } from "@/lib/utils"
+import { useAuth } from "@/app/context/AuthContext"
+import Tooltip from "@/components/ui/tooltip"
+import favoritesService from "@/app/services/api/favoritesService"
+import { toast } from "sonner"
 
 export default function CarListings() {
   const [listings, setListings] = useState([])
@@ -13,6 +17,7 @@ export default function CarListings() {
   const [showAll, setShowAll] = useState(false)
   const [favorites, setFavorites] = useState(new Set())
   const [pagination, setPagination] = useState(null)
+  const { isAuthenticated } = useAuth()
 
   useEffect(() => {
     fetchListings()
@@ -33,7 +38,21 @@ export default function CarListings() {
       }
     } catch (err) {
       console.error("Error fetching listings:", err)
-      setError("Unable to load listings. Please try again later.")
+      
+      // Handle different types of errors with user-friendly messages
+      let errorMessage = "Unable to load listings at the moment."
+      
+      if (err.status === 0) {
+        errorMessage = "Connection failed. Please check your internet connection and try again."
+      } else if (err.status >= 500) {
+        errorMessage = "Server is temporarily unavailable. Please try again in a few minutes."
+      } else if (err.status === 404) {
+        errorMessage = "Listings service not found. Please contact support if this persists."
+      } else if (err.status >= 400 && err.status < 500) {
+        errorMessage = err.message || "There was an issue with your request. Please try again."
+      }
+      
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -74,23 +93,93 @@ export default function CarListings() {
     return parts.join(", ") || "Location not specified"
   }
 
-  const toggleFavorite = (e, listingId) => {
+  const toggleFavorite = async (e, listingId) => {
     e.preventDefault()
     e.stopPropagation()
-    const newFavorites = new Set(favorites)
-    if (newFavorites.has(listingId)) {
-      newFavorites.delete(listingId)
-    } else {
-      newFavorites.add(listingId)
+    
+    if (!isAuthenticated) {
+      toast.error('Please sign in to add favorites')
+      return
     }
-    setFavorites(newFavorites)
+    
+    try {
+      // Check current favorite status from listing data or local state
+      const isCurrentlyFavorited = listings.find(l => l.id === listingId)?.isFavorited || favorites.has(listingId)
+      
+      if (isCurrentlyFavorited) {
+        // Remove from favorites
+        await favoritesService.removeFromFavorites(listingId)
+        
+        // Update local state
+        const newFavorites = new Set(favorites)
+        newFavorites.delete(listingId)
+        setFavorites(newFavorites)
+        
+        // Update listings data
+        setListings(prevListings => 
+          prevListings.map(listing => 
+            listing.id === listingId 
+              ? { 
+                  ...listing, 
+                  isFavorited: false,
+                  favoriteCount: Math.max((listing.favoriteCount || 0) - 1, 0)
+                }
+              : listing
+          )
+        )
+        
+        toast.success('Removed from favorites')
+      } else {
+        // Add to favorites
+        await favoritesService.addToFavorites(listingId)
+        
+        // Update local state
+        const newFavorites = new Set(favorites)
+        newFavorites.add(listingId)
+        setFavorites(newFavorites)
+        
+        // Update listings data
+        setListings(prevListings => 
+          prevListings.map(listing => 
+            listing.id === listingId 
+              ? { 
+                  ...listing, 
+                  isFavorited: true,
+                  favoriteCount: (listing.favoriteCount || 0) + 1
+                }
+              : listing
+          )
+        )
+        
+        toast.success('Added to favorites')
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error)
+      toast.error('Failed to update favorite status')
+    }
   }
 
   if (loading) {
     return (
       <section className="container mx-auto px-4 py-8 max-w-7xl mb-10">
-        <div className="flex justify-center items-center h-64">
-          <div className="text-gray-500">Loading listings...</div>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">Latest Listings</h2>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {[...Array(8)].map((_, index) => (
+            <div key={index} className="bg-white rounded-lg shadow-md overflow-hidden animate-pulse">
+              <div className="h-32 md:h-48 bg-gray-200"></div>
+              <div className="p-4">
+                <div className="flex justify-between items-start mb-2">
+                  <div className="h-6 bg-gray-200 rounded w-20"></div>
+                  <div className="h-4 bg-gray-200 rounded w-12"></div>
+                </div>
+                <div className="h-5 bg-gray-200 rounded w-3/4 mb-1"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
+                <div className="h-6 bg-gray-200 rounded w-16"></div>
+              </div>
+            </div>
+          ))}
         </div>
       </section>
     )
@@ -99,8 +188,27 @@ export default function CarListings() {
   if (error) {
     return (
       <section className="container mx-auto px-4 py-8 max-w-7xl mb-10">
-        <div className="flex justify-center items-center h-64">
-          <div className="text-red-500">{error}</div>
+        <div className="flex flex-col justify-center items-center h-64 text-center">
+          <div className="mb-4">
+            <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            No listings available at this moment
+          </h3>
+          <p className="text-gray-600 mb-6 max-w-md">
+            {error}
+          </p>
+          <button
+            onClick={fetchListings}
+            className="bg-cyan-600 hover:bg-cyan-700 text-white px-6 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Try Again
+          </button>
         </div>
       </section>
     )
@@ -152,11 +260,19 @@ export default function CarListings() {
                 )}
                 <button
                   onClick={(e) => toggleFavorite(e, listing.id)}
-                  className="absolute top-3 right-3 bg-white rounded-full p-2 shadow-md hover:shadow-lg transition-shadow duration-200"
+                  className={`absolute top-3 right-3 bg-white rounded-full p-2 shadow-md hover:shadow-lg transition-shadow duration-200 border border-gray-200 ${
+                    !isAuthenticated ? 'cursor-not-allowed opacity-75' : 'hover:border-red-300'
+                  }`}
+                  disabled={!isAuthenticated}
+                  title={!isAuthenticated ? "Please sign in to add favorites" : "Add to favorites"}
                 >
                   <Heart
                     className={`w-5 h-5 ${
-                      favorites.has(listing.id) ? "fill-red-500 text-red-500" : "text-gray-400 hover:text-red-500"
+                      isAuthenticated && (listing.isFavorited || favorites.has(listing.id))
+                        ? "fill-red-500 text-red-500" 
+                        : isAuthenticated 
+                          ? "text-gray-600 hover:text-red-500" 
+                          : "text-gray-400"
                     } transition-colors duration-200`}
                   />
                 </button>

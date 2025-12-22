@@ -15,10 +15,25 @@ import httpClient from "@/app/services/httpClient";
  */
 export const getPlans = async () => {
   try {
-    const response = await httpClient.get("/end-user/subscriptions/plans");
+    const response = await httpClient.get("/public/subscription-plans");
     return response.data || [];
   } catch (error) {
     console.error("Error fetching subscription plans:", error);
+    throw error;
+  }
+};
+
+/**
+ * Get subscription plans by category (End User)
+ * @param {number} categoryId - The category ID
+ * @returns {Promise<Array>} List of active subscription plans for the category
+ */
+export const getPlansByCategory = async (categoryId) => {
+  try {
+    const response = await httpClient.get(`/public/subscription-plans/category/${categoryId}`);
+    return response.data || [];
+  } catch (error) {
+    console.error(`Error fetching subscription plans for category ${categoryId}:`, error);
     throw error;
   }
 };
@@ -30,7 +45,7 @@ export const getPlans = async () => {
  */
 export const getPlanDetails = async (planId) => {
   try {
-    const response = await httpClient.get(`/end-user/subscriptions/plans/${planId}`);
+    const response = await httpClient.get(`/public/subscription-plans/${planId}`);
     return response.data || null;
   } catch (error) {
     console.error(`Error fetching plan details for ID ${planId}:`, error);
@@ -125,7 +140,7 @@ export const cancelSubscription = async (subscriptionId, reason) => {
 
 /**
  * Get all subscription plans (Admin)
- * @param {Object} filters - Optional filters (isActive, isPublic, planCode)
+ * @param {Object} filters - Optional filters (isActive, isPublic, planCode, categoryId)
  * @returns {Promise<Object>} Response with plans data
  */
 export const getAllPlans = async (filters = {}) => {
@@ -134,8 +149,10 @@ export const getAllPlans = async (filters = {}) => {
     if (filters.isActive !== undefined) params.append("isActive", filters.isActive);
     if (filters.isPublic !== undefined) params.append("isPublic", filters.isPublic);
     if (filters.planCode) params.append("planCode", filters.planCode);
+    if (filters.categoryId) params.append("categoryId", filters.categoryId);
     
     const endpoint = `/panel/subscription-plans${params.toString() ? `?${params.toString()}` : ""}`;
+    
     return await httpClient.get(endpoint);
   } catch (error) {
     console.error("Error fetching all plans:", error);
@@ -344,6 +361,7 @@ export const extendSubscription = async (subscriptionId, extensionDays) => {
 const subscriptionService = {
   // End User - Plans
   getPlans,
+  getPlansByCategory,
   getPlanDetails,
   // End User - Subscriptions
   getMySubscriptions,

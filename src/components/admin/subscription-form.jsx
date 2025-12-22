@@ -4,17 +4,20 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { ArrowLeftIcon } from "lucide-react"
 import subscriptionService from "@/app/services/api/subscriptionService"
+import { categoryService } from "@/app/services/api"
 import { toast } from "sonner"
 
 export default function SubscriptionForm({ planId = null, mode = 'create' }) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [categories, setCategories] = useState([])
   const [formData, setFormData] = useState({
     // Basic Info
     planCode: '',
     name: '',
     description: '',
     tagline: '',
+    categoryId: '', // Added category selection
     
     // Pricing
     basePrice: '',
@@ -93,10 +96,29 @@ export default function SubscriptionForm({ planId = null, mode = 'create' }) {
   })
 
   useEffect(() => {
+    fetchCategories()
+  }, [])
+
+  useEffect(() => {
     if (planId && mode !== 'create') {
       fetchPlanData()
     }
   }, [planId, mode])
+
+  const fetchCategories = async () => {
+    try {
+      const response = await categoryService.getActiveCategories()
+      if (response.success && response.data) {
+        setCategories(response.data)
+        // Auto-select first category if creating new plan
+        if (mode === 'create' && response.data.length > 0 && !formData.categoryId) {
+          setFormData(prev => ({ ...prev, categoryId: response.data[0].id }))
+        }
+      }
+    } catch (error) {
+      toast.error(error.message || 'Failed to fetch categories')
+    }
+  }
 
   const fetchPlanData = async () => {
     try {
@@ -156,6 +178,7 @@ export default function SubscriptionForm({ planId = null, mode = 'create' }) {
       const finalPrice = calculateFinalPrice()
       const submitData = {
         ...formData,
+        categoryId: parseInt(formData.categoryId) || null,
         basePrice: parseFloat(formData.basePrice) || 0,
         discountAmount: parseFloat(formData.discountAmount) || 0,
         finalPrice: parseFloat(finalPrice) || 0,
@@ -228,6 +251,26 @@ export default function SubscriptionForm({ planId = null, mode = 'create' }) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
+                Category <span className="text-red-500">*</span>
+              </label>
+              <select
+                name="categoryId"
+                value={formData.categoryId}
+                onChange={handleChange}
+                disabled={mode === 'view'}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent disabled:bg-gray-100"
+              >
+                <option value="">Select Category</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Plan Code <span className="text-red-500">*</span>
               </label>
               <input
@@ -238,10 +281,10 @@ export default function SubscriptionForm({ planId = null, mode = 'create' }) {
                 disabled={mode === 'view'}
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent disabled:bg-gray-100"
-                placeholder="e.g., premium"
+                placeholder="e.g., cars-premium"
               />
             </div>
-            <div>
+            <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Plan Name <span className="text-red-500">*</span>
               </label>
@@ -253,7 +296,7 @@ export default function SubscriptionForm({ planId = null, mode = 'create' }) {
                 disabled={mode === 'view'}
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent disabled:bg-gray-100"
-                placeholder="e.g., Premium Plan"
+                placeholder="e.g., Cars Premium Plan"
               />
             </div>
             <div className="md:col-span-2">
