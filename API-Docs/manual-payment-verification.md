@@ -11,6 +11,7 @@ This document describes the temporary manual payment verification APIs used unti
 1. [List Manual Subscriptions](#1-list-manual-subscriptions)
 2. [Verify or Cancel Subscription](#2-verify-or-cancel-subscription)
 3. [End User Subscription API](#3-end-user-subscription-api)
+4. [QR Code Management](#4-qr-code-management)
 
 ---
 
@@ -227,7 +228,7 @@ GET /api/panel/manual-payments/subscriptions?status=cancelled
 
 Get detailed information about a specific subscription for verification.
 
-**Endpoint:** `GET /api/manual-payments/subscriptions/:id`
+**Endpoint:** `GET /api/manual-payments/view/:id`
 
 **Authentication:** Required (Super Admin only)
 
@@ -239,7 +240,7 @@ Get detailed information about a specific subscription for verification.
 
 **Example Request:**
 ```bash
-GET /api/manual-payments/subscriptions/15
+GET /api/manual-payments/view/15
 ```
 
 **Success Response (200):**
@@ -570,7 +571,7 @@ formData.append('paymentProof', fileInput.files[0]); // File object
 formData.append('customerName', 'John Doe');
 formData.append('customerMobile', '9876543210');
 
-fetch('/api/manual-payments/subscribe', {
+fetch('/api/manual-payments/create', {
   method: 'POST',
   headers: {
     'Authorization': 'Bearer ' + token
@@ -582,7 +583,7 @@ fetch('/api/manual-payments/subscribe', {
 **cURL Example:**
 
 ```bash
-curl -X POST http://localhost:5000/api/manual-payments/subscribe \
+curl -X POST http://localhost:5000/api/manual-payments/create \
   -H "Authorization: Bearer USER_TOKEN" \
   -F "planId=4" \
   -F "upiId=user@paytm" \
@@ -754,7 +755,7 @@ POST /api/end-user/subscriptions
 
 ```bash
 # 1. User submits subscription with payment proof
-curl -X POST http://localhost:5000/api/manual-payments/subscribe \
+curl -X POST http://localhost:5000/api/manual-payments/create \
   -H "Authorization: Bearer USER_TOKEN" \
   -F "planId=4" \
   -F "upiId=test@paytm" \
@@ -762,11 +763,11 @@ curl -X POST http://localhost:5000/api/manual-payments/subscribe \
   -F "paymentProof=@/path/to/proof.jpg"
 
 # 2. Admin lists pending subscriptions
-curl -X GET "http://localhost:5000/api/manual-payments/subscriptions?status=pending" \
+curl -X GET "http://localhost:5000/api/manual-payments/list?status=pending" \
   -H "Authorization: Bearer ADMIN_TOKEN"
 
 # 3. Admin views single subscription details
-curl -X GET "http://localhost:5000/api/manual-payments/subscriptions/15" \
+curl -X GET "http://localhost:5000/api/manual-payments/view/15" \
   -H "Authorization: Bearer ADMIN_TOKEN"
 
 # 4. Admin approves payment
@@ -820,6 +821,181 @@ curl -X GET "http://localhost:5000/api/panel/manual-payments/subscriptions?statu
 
 ---
 
+## 4. QR Code Management
+
+### 4.1 Upload QR Code (Super Admin)
+
+Upload or update the QR code image for manual payments.
+
+**Endpoint:** `POST /api/panel/manual-payments/qr-code`
+
+**Authentication:** Required (Super Admin only)
+
+**Content-Type:** `multipart/form-data`
+
+**Request Body (Form Data):**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `qrCode` | file | Yes | QR code image (max 2MB, JPG/PNG only) |
+
+**Example Request:**
+
+```javascript
+const formData = new FormData();
+formData.append('qrCode', fileInput.files[0]); // File object
+
+fetch('/api/panel/manual-payments/qr-code', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer ' + adminToken
+  },
+  body: formData
+});
+```
+
+**cURL Example:**
+
+```bash
+curl -X POST http://localhost:5000/api/panel/manual-payments/qr-code \
+  -H "Authorization: Bearer ADMIN_TOKEN" \
+  -F "qrCode=@/path/to/qr-code.png"
+```
+
+**Success Response (201):**
+
+```json
+{
+  "success": true,
+  "message": "QR code uploaded successfully",
+  "data": {
+    "id": 1,
+    "identifierSlug": "manual-payment-qr",
+    "slug": "manual-payment-qr-a3b5",
+    "caption": "Manual Payment QR Code",
+    "subCaption": "Scan to make payment",
+    "description": "QR code for manual payment verification",
+    "mediaType": "image",
+    "mediaUrl": "http://localhost:5000/uploads/manual-payment-qr/my-qr.jpg",
+    "thumbnailUrl": "http://localhost:5000/uploads/manual-payment-qr/my-qr.jpg",
+    "mimeType": "image/png",
+    "thumbnailMimeType": "image/png",
+    "displayOrder": 0,
+    "isPrimary": true,
+    "storageType": "local",
+    "createdAt": "2025-01-20T10:00:00.000Z",
+    "updatedAt": "2025-01-20T10:00:00.000Z"
+  }
+}
+```
+
+**Storage Details:**
+- **Cloudinary path:** `eclassify_app/uploads/manual-payment-qr/my-qr.jpg`
+- **Database path:** `uploads/manual-payment-qr/my-qr.jpg`
+- **Local path:** `uploads/manual-payment-qr/my-qr.jpg`
+- **Max size:** 2MB
+- **Allowed formats:** JPG, PNG
+
+**Behavior:**
+- If QR code already exists, old file is deleted from storage and database record is updated
+- Only one QR code record exists at a time (identifier_slug: 'manual-payment-qr')
+- Full URL is automatically generated based on storage type
+- Returns "QR code updated successfully" if updating, "QR code uploaded successfully" if creating new
+
+**Error Responses:**
+
+```json
+// 400 - No file uploaded
+{
+  "success": false,
+  "message": "QR code image is required"
+}
+
+// 400 - Invalid file type
+{
+  "success": false,
+  "message": "Invalid file type. Only JPG and PNG are allowed for QR codes."
+}
+
+// 400 - File too large
+{
+  "success": false,
+  "message": "File too large"
+}
+```
+
+---
+
+### 4.2 Get QR Code (Public)
+
+Retrieve the current QR code for manual payments.
+
+**Endpoint:** `GET /api/public/manual-payments/qr-code`
+
+**Authentication:** Not required (Public endpoint)
+
+**Example Request:**
+
+```bash
+curl -X GET http://localhost:5000/api/public/manual-payments/qr-code
+```
+
+**Success Response (200):**
+
+```json
+{
+  "success": true,
+  "message": "QR code retrieved successfully",
+  "data": {
+    "id": 1,
+    "identifierSlug": "manual-payment-qr",
+    "slug": "manual-payment-qr-a3b5",
+    "caption": "Manual Payment QR Code",
+    "subCaption": "Scan to make payment",
+    "description": "QR code for manual payment verification",
+    "mediaType": "image",
+    "mediaUrl": "http://localhost:5000/uploads/manual-payment-qr/my-qr.jpg",
+    "thumbnailUrl": "http://localhost:5000/uploads/manual-payment-qr/my-qr.jpg",
+    "mimeType": "image/png",
+    "thumbnailMimeType": "image/png",
+    "displayOrder": 0,
+    "isPrimary": true,
+    "storageType": "local",
+    "createdAt": "2025-01-20T10:00:00.000Z",
+    "updatedAt": "2025-01-20T10:00:00.000Z"
+  }
+}
+```
+
+**Response when no QR code exists:**
+
+```json
+{
+  "success": true,
+  "message": "No QR code available",
+  "data": null
+}
+```
+
+**Frontend Usage:**
+
+```javascript
+// Fetch QR code
+const response = await fetch('/api/public/manual-payments/qr-code');
+const result = await response.json();
+
+if (result.data) {
+  // Display QR code
+  document.getElementById('qr-image').src = result.data.mediaUrl;
+  document.getElementById('qr-caption').textContent = result.data.caption;
+} else {
+  // Show message: No QR code available
+  document.getElementById('qr-container').innerHTML = '<p>QR code not available</p>';
+}
+```
+
+---
+
 ## Summary
 
 ### Endpoints
@@ -827,9 +1003,11 @@ curl -X GET "http://localhost:5000/api/panel/manual-payments/subscriptions?statu
 | Method | Endpoint | Description | Access |
 |--------|----------|-------------|--------|
 | POST | `/api/manual-payments/create` | Create manual payment subscription | Authenticated User |
-| GET | `/api/manual-payments/list` | List manual payment subscriptions | Super Admin |
-| GET | `/api/manual-payments/view/:id` | View manual payment subscription | Super Admin |
-| POST | `/api/manual-payments/verify/:id` | Verify or cancel manual payment | Super Admin |
+| GET | `/api/panel/manual-payments/list` | List manual payment subscriptions | Super Admin |
+| GET | `/api/panel/manual-payments/view/:id` | View manual payment subscription | Super Admin |
+| POST | `/api/panel/manual-payments/verify/:id` | Verify or cancel manual payment | Super Admin |
+| POST | `/api/panel/manual-payments/qr-code` | Upload QR code for manual payments | Super Admin |
+| GET | `/api/public/manual-payments/qr-code` | Get QR code for manual payments | Public |
 
 ### Status Flow
 

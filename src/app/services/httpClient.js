@@ -3,7 +3,7 @@
  * Centralized configuration for all API calls
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000/api';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000/api';
 
 class HttpClient {
   constructor(baseURL = API_BASE_URL) {

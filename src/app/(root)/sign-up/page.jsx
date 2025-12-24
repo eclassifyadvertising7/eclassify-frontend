@@ -105,7 +105,7 @@ export default function SignUpPage() {
 
     setLoading(true)
     try {
-      const response = await authService.verifyOTP(mobile, otp, '+91')
+      const response = await authService.verifyOTP(mobile, otp, 'signup', '+91', email.trim())
       
       if (response.success) {
         setOtpVerified(true)

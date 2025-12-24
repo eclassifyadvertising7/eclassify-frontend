@@ -1,4 +1,4 @@
-import httpClient from '../httpClient';
+import httpClient, { API_BASE_URL } from '../httpClient';
 
 const isValidToken = (token) => {
   return token && typeof token === 'string' && token.split('.').length === 3;
@@ -127,11 +127,11 @@ export const authService = {
       type
     };
     
+    if (email) {
+      payload.email = email;
+    }
     if (type === 'signup' && fullName) {
       payload.fullName = fullName;
-    }
-    if (type === 'signup' && email) {
-      payload.email = email;
     }
     
     console.log('🔵 [sendOTP] Request payload:', payload);
@@ -222,12 +222,17 @@ export const authService = {
     return response;
   },
 
-  verifyOTP: async (mobile, otp, countryCode = '+91') => {
+  verifyOTP: async (mobile, otp, type, countryCode = '+91', email = null) => {
     const payload = { 
       mobile, 
-      otp, 
+      otp,
+      type,
       countryCode
     };
+    
+    if (email) {
+      payload.email = email;
+    }
     
     console.log('🟣 [verifyOTP] Request payload:', payload);
     const response = await httpClient.post('/auth/otp/verify', payload);
@@ -256,13 +261,17 @@ export const authService = {
     console.log('🟠 [otpSignup] Response user:', response.data?.user);
     
     if (response.success && response.data?.tokens) {
-      const { access_token, refresh_token } = response.data.tokens;
-      console.log('🟠 [otpSignup] Token validation - access_token valid:', isValidToken(access_token));
-      console.log('🟠 [otpSignup] Token validation - refresh_token valid:', isValidToken(refresh_token));
+      // Handle both old and new token field names
+      const { access_token, refresh_token, accessToken, refreshToken } = response.data.tokens;
+      const finalAccessToken = accessToken || access_token;
+      const finalRefreshToken = refreshToken || refresh_token;
       
-      if (isValidToken(access_token) && isValidToken(refresh_token)) {
-        secureStorage.setItem('access_token', access_token);
-        secureStorage.setItem('refresh_token', refresh_token);
+      console.log('🟠 [otpSignup] Token validation - access_token valid:', isValidToken(finalAccessToken));
+      console.log('🟠 [otpSignup] Token validation - refresh_token valid:', isValidToken(finalRefreshToken));
+      
+      if (isValidToken(finalAccessToken) && isValidToken(finalRefreshToken)) {
+        secureStorage.setItem('access_token', finalAccessToken);
+        secureStorage.setItem('refresh_token', finalRefreshToken);
         secureStorage.setItem('user', JSON.stringify(response.data.user));
         console.log('🟠 [otpSignup] Tokens stored successfully');
       } else {
@@ -275,9 +284,48 @@ export const authService = {
     return response;
   },
 
+  otpLogin: async (mobile, email, countryCode = '+91', device_name = null) => {
+    const payload = {
+      mobile,
+      email,
+      countryCode,
+      device_name: device_name || (typeof navigator !== 'undefined' ? navigator.userAgent : 'Unknown Device')
+    };
+    
+    console.log('🟡 [otpLogin] Request payload:', payload);
+    const response = await httpClient.post('/auth/otp/login', payload);
+    console.log('🟡 [otpLogin] Backend response:', response);
+    console.log('🟡 [otpLogin] Response success:', response.success);
+    console.log('🟡 [otpLogin] Response data:', response.data);
+    console.log('🟡 [otpLogin] Response tokens:', response.data?.tokens);
+    console.log('🟡 [otpLogin] Response user:', response.data?.user);
+    
+    if (response.success && response.data?.tokens) {
+      // Handle both old and new token field names
+      const { access_token, refresh_token, accessToken, refreshToken } = response.data.tokens;
+      const finalAccessToken = accessToken || access_token;
+      const finalRefreshToken = refreshToken || refresh_token;
+      
+      console.log('🟡 [otpLogin] Token validation - access_token valid:', isValidToken(finalAccessToken));
+      console.log('🟡 [otpLogin] Token validation - refresh_token valid:', isValidToken(finalRefreshToken));
+      
+      if (isValidToken(finalAccessToken) && isValidToken(finalRefreshToken)) {
+        secureStorage.setItem('access_token', finalAccessToken);
+        secureStorage.setItem('refresh_token', finalRefreshToken);
+        secureStorage.setItem('user', JSON.stringify(response.data.user));
+        console.log('🟡 [otpLogin] Tokens stored successfully');
+      } else {
+        console.error('🔴 [otpLogin] Invalid tokens received');
+      }
+    } else {
+      console.error('🔴 [otpLogin] No tokens in response or request failed');
+    }
+    
+    return response;
+  },
+
   initiateGoogleAuth: (device_name = null) => {
     const deviceName = device_name || (typeof navigator !== 'undefined' ? navigator.userAgent : 'Unknown Device');
-    const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000/api';
     const authUrl = `${API_BASE_URL}/auth/google?device_name=${encodeURIComponent(deviceName)}`;
     
     if (typeof window !== 'undefined') {

@@ -4,14 +4,14 @@
 API endpoints for managing user favorites functionality, allowing users to save and manage their favorite listings.
 
 ## Authentication
-All end-user endpoints require authentication. Panel endpoints require admin/staff roles.
+End-user endpoints require authentication. Public endpoints are accessible without authentication. Panel endpoints require admin/staff roles.
 
 ---
 
 ## End-User Endpoints
 
 ### Add Listing to Favorites
-**POST** `/api/end-user/favorites`
+**POST** `/api/end-user/create/favorites`
 
 Add a listing to user's favorites.
 
@@ -42,7 +42,7 @@ Add a listing to user's favorites.
 ---
 
 ### Remove Listing from Favorites
-**DELETE** `/api/end-user/favorites/:listingId`
+**DELETE** `/api/end-user/delete/favorites/:listingId`
 
 Remove a listing from user's favorites.
 
@@ -61,7 +61,7 @@ Remove a listing from user's favorites.
 ---
 
 ### Get User's Favorites
-**GET** `/api/end-user/favorites`
+**GET** `/api/end-user/get/favorites`
 
 Get user's favorite listings with pagination and filters.
 
@@ -174,6 +174,35 @@ Get user's favorite statistics and breakdown by category.
 
 ---
 
+## Public Endpoints
+
+### Get Listing Favorite Count
+**GET** `/api/public/listings/:listingId/favorite-count`
+
+Get the total number of favorites for a specific listing. No authentication required.
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Listing favorite count retrieved successfully",
+  "data": {
+    "listingId": 12345,
+    "favoriteCount": 42
+  }
+}
+```
+
+**Error Responses:**
+- `400` - Invalid listing ID
+- `500` - Internal server error
+
+**Note:** Favorite counts are also automatically included in all listing responses (get listings, get listing details, search results) as `favoriteCount` field.
+
+
+
+---
+
 ## Panel Endpoints (Admin/Staff)
 
 ### Get Most Favorited Listings
@@ -278,6 +307,7 @@ Get overall favorite statistics for admin dashboard.
   "success": false,
   "message": "Internal server error"
 }
+```
 
 ---
 

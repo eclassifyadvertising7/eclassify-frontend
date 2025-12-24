@@ -9,12 +9,12 @@ Complete API documentation for car brands, models, variants, and specifications 
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
 | **Public Endpoints** |
-| GET | `/api/public/car-brands` | ❌ | Get all car brands |
+| GET | `/api/public/car-brands` | ❌ | Get active brands (grouped: featured/all) |
 | GET | `/api/public/car-models?brandId=10` | ❌ | Get models by brand |
 | GET | `/api/public/car-variants?modelId=45` | ❌ | Get variants by model |
 | GET | `/api/public/car-specifications/:variantId` | ❌ | Get specification by variant |
 | **Panel Endpoints** |
-| GET | `/api/panel/car-brands` | ✅ Admin | Get all brands (admin) |
+| GET | `/api/panel/car-brands` | ✅ Admin | Get all brands (flat list, active+inactive) |
 | POST | `/api/panel/car-brands` | ✅ Admin | Create brand |
 | GET | `/api/panel/car-brands/:id` | ✅ Admin | Get brand by ID |
 | PUT | `/api/panel/car-brands/:id` | ✅ Admin | Update brand |
@@ -308,14 +308,17 @@ Get detailed specifications for a specific variant.
 
 ### 1. Get All Car Brands (Admin)
 
-Get list of all car brands with advanced filtering options.
+Get flat list of all car brands with all statuses (active + inactive) for admin management.
 
 **Endpoint:** `GET /api/panel/car-brands`
 
+**Authentication:** Required (Admin)
+
 **Query Parameters:**
-- `search` (optional) - Search by brand name
-- `isActive` (optional) - Filter by active status (true/false)
-- `isPopular` (optional) - Filter by popular status (true/false)
+- `isActive` (optional) - Filter by active status: `true` or `false`
+- `isPopular` (optional) - Filter by popular status: `true` or `false`
+- `isFeatured` (optional) - Filter by featured status: `true` or `false`
+- `search` (optional) - Search by brand name, slug, or local name
 
 **Examples:**
 ```
@@ -369,6 +372,13 @@ GET /api/panel/car-brands?isActive=true&search=bmw # Active brands matching "bmw
 }
 ```
 
+**Key Differences from Public Endpoint:**
+- Returns **flat array** (not grouped by featured/all)
+- Includes **inactive brands** (unless filtered)
+- Shows **all fields** (description, countryOfOrigin, displayOrder, timestamps)
+- Supports **isActive filter** to view inactive brands
+- Ordered by `displayOrder` then `name`
+
 ---
 
 ### 2. Create Car Brand
@@ -410,7 +420,7 @@ Create a new car brand.
 
 ---
 
-### 3. Update Car Brand
+### 2. Update Car Brand
 
 Update an existing car brand.
 
@@ -442,7 +452,7 @@ Update an existing car brand.
 
 ---
 
-### 4. Delete Car Brand
+### 3. Delete Car Brand
 
 Soft delete a car brand (cascades to models and variants).
 
@@ -459,7 +469,7 @@ Soft delete a car brand (cascades to models and variants).
 
 ---
 
-### 5. Create Car Model
+### 4. Create Car Model
 
 Create a new car model.
 
@@ -495,7 +505,7 @@ Create a new car model.
 
 ---
 
-### 6. Create Car Variant
+### 5. Create Car Variant
 
 Create a new car variant.
 

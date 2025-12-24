@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
+import httpClient from '../httpClient'
 
 export const searchListings = async (filters = {}) => {
   try {
@@ -10,18 +10,7 @@ export const searchListings = async (filters = {}) => {
       }
     })
 
-    const response = await fetch(`${API_BASE_URL}/api/public/listings/search?${queryParams.toString()}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-
-    const result = await response.json()
+    const result = await httpClient.get(`/public/listings/search?${queryParams.toString()}`)
     return result
   } catch (error) {
     console.error('Search listings error:', error)
@@ -36,22 +25,7 @@ export const searchListings = async (filters = {}) => {
 
 export const logSearchActivity = async (searchData) => {
   try {
-    const token = localStorage.getItem('authToken')
-    
-    const response = await fetch(`${API_BASE_URL}/api/end-user/searches/log`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token && { 'Authorization': `Bearer ${token}` })
-      },
-      body: JSON.stringify(searchData)
-    })
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-
-    const result = await response.json()
+    const result = await httpClient.post('/end-user/searches/log', searchData)
     return result
   } catch (error) {
     console.error('Log search activity error:', error)
@@ -64,29 +38,7 @@ export const logSearchActivity = async (searchData) => {
 
 export const getSearchHistory = async (page = 1, limit = 20) => {
   try {
-    const token = localStorage.getItem('authToken')
-    
-    if (!token) {
-      return {
-        success: false,
-        message: 'Authentication required',
-        data: { searches: [], pagination: null }
-      }
-    }
-
-    const response = await fetch(`${API_BASE_URL}/api/end-user/searches/history?page=${page}&limit=${limit}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
-    })
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-
-    const result = await response.json()
+    const result = await httpClient.get(`/end-user/searches/history?page=${page}&limit=${limit}`)
     return result
   } catch (error) {
     console.error('Get search history error:', error)
@@ -100,21 +52,7 @@ export const getSearchHistory = async (page = 1, limit = 20) => {
 
 export const getSearchRecommendations = async (limit = 5) => {
   try {
-    const token = localStorage.getItem('authToken')
-    
-    const response = await fetch(`${API_BASE_URL}/api/end-user/searches/recommendations?limit=${limit}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token && { 'Authorization': `Bearer ${token}` })
-      }
-    })
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-
-    const result = await response.json()
+    const result = await httpClient.get(`/end-user/searches/recommendations?limit=${limit}`)
     return result
   } catch (error) {
     console.error('Get search recommendations error:', error)
@@ -133,18 +71,7 @@ export const getPopularSearches = async (limit = 10, categoryId = null) => {
       queryParams.append('categoryId', categoryId.toString())
     }
 
-    const response = await fetch(`${API_BASE_URL}/api/public/searches/popular?${queryParams.toString()}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      }
-    })
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-
-    const result = await response.json()
+    const result = await httpClient.get(`/public/searches/popular?${queryParams.toString()}`)
     return result
   } catch (error) {
     console.error('Get popular searches error:', error)

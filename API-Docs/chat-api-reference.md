@@ -4,21 +4,15 @@ Complete API documentation for frontend integration.
 
 **Base URL:** `http://localhost:5000/api`
 
-**Authentication:** All endpoints require JWT token in
-`Authorization: Bearer <token>` header.
+**Authentication:** All endpoints require JWT token in `Authorization: Bearer <token>` header.
 
 **Standard Response Format:**
-
 ```json
 {
   "success": true,
   "message": "Operation successful",
-  "data": {
-    /* response data */
-  },
-  "pagination": {
-    /* optional pagination info */
-  }
+  "data": { /* response data */ },
+  "pagination": { /* optional pagination info */ }
 }
 ```
 
@@ -35,17 +29,13 @@ Get all chat rooms for the authenticated user with filters.
 **Endpoint:** `GET /end-user/chats/rooms`
 
 **Query Parameters:**
-
-- `main` (string, optional): Filter type - `all`, `buying`, `selling` (default:
-  `all`)
-- `sub` (string, optional): Sub-filter - `all`, `unread`, `important`,
-  `elite_buyer`, `elite_seller` (default: `all`)
+- `main` (string, optional): Filter type - `all`, `buying`, `selling` (default: `all`)
+- `sub` (string, optional): Sub-filter - `all`, `unread`, `important`, `elite_buyer`, `elite_seller` (default: `all`)
 - `isActive` (boolean, optional): Filter by active status (default: `true`)
 - `page` (number, optional): Page number (default: `1`)
 - `limit` (number, optional): Items per page (default: `20`)
 
 **Response:**
-
 ```json
 {
   "success": true,
@@ -83,14 +73,14 @@ Get all chat rooms for the authenticated user with filters.
         "id": 789,
         "fullName": "John Doe",
         "profile": {
-          "profilePictureUrl": "http://localhost:5000/uploads/..."
+          "profilePhoto": "https://res.cloudinary.com/your-cloud/image/upload/eclassify_app/uploads/profiles/user-789/photo.jpg"
         }
       },
       "seller": {
         "id": 101,
         "fullName": "Jane Smith",
         "profile": {
-          "profilePictureUrl": "http://localhost:5000/uploads/..."
+          "profilePhoto": "https://res.cloudinary.com/your-cloud/image/upload/eclassify_app/uploads/profiles/user-101/photo.jpg"
         }
       }
     }
@@ -113,7 +103,6 @@ Create a new chat room or get existing one for a listing.
 **Endpoint:** `POST /end-user/chats/rooms/create`
 
 **Request Body:**
-
 ```json
 {
   "listingId": 456
@@ -121,7 +110,6 @@ Create a new chat room or get existing one for a listing.
 ```
 
 **Response (New Room):**
-
 ```json
 {
   "success": true,
@@ -134,7 +122,6 @@ Create a new chat room or get existing one for a listing.
 ```
 
 **Response (Existing Room):**
-
 ```json
 {
   "success": true,
@@ -155,7 +142,6 @@ Get specific room details without messages.
 **Endpoint:** `GET /end-user/chats/rooms/view/:roomId`
 
 **Response:**
-
 ```json
 {
   "success": true,
@@ -195,7 +181,6 @@ Delete a chat room (cascade deletes messages and offers).
 **Endpoint:** `DELETE /end-user/chats/rooms/delete/:roomId`
 
 **Response:**
-
 ```json
 {
   "success": true,
@@ -213,7 +198,6 @@ Mark/unmark room as important.
 **Endpoint:** `PATCH /end-user/chats/rooms/important/:roomId`
 
 **Request Body:**
-
 ```json
 {
   "isImportant": true
@@ -221,7 +205,6 @@ Mark/unmark room as important.
 ```
 
 **Response:**
-
 ```json
 {
   "success": true,
@@ -239,7 +222,6 @@ Block or unblock the other user in the room.
 **Endpoint:** `PATCH /end-user/chats/rooms/block/:roomId`
 
 **Request Body:**
-
 ```json
 {
   "blocked": true,
@@ -248,7 +230,6 @@ Block or unblock the other user in the room.
 ```
 
 **Response:**
-
 ```json
 {
   "success": true,
@@ -266,7 +247,6 @@ Report the other user in the room.
 **Endpoint:** `POST /end-user/chats/rooms/report/:roomId`
 
 **Request Body:**
-
 ```json
 {
   "reportType": "spam",
@@ -275,7 +255,6 @@ Report the other user in the room.
 ```
 
 **Response:**
-
 ```json
 {
   "success": true,
@@ -295,7 +274,6 @@ Send a text message in a room.
 **Endpoint:** `POST /end-user/chats/messages/send/:roomId`
 
 **Request Body:**
-
 ```json
 {
   "messageType": "text",
@@ -305,7 +283,6 @@ Send a text message in a room.
 ```
 
 **Response:**
-
 ```json
 {
   "success": true,
@@ -328,13 +305,11 @@ Send an image message with optional caption.
 **Content-Type:** `multipart/form-data`
 
 **Form Data:**
-
 - `messageType`: `"image"`
 - `messageText`: `"Here's a photo"` (optional caption)
 - `image`: File (max 5MB, jpg/png/webp)
 
 **Response:**
-
 ```json
 {
   "success": true,
@@ -355,21 +330,19 @@ Send a location message.
 **Endpoint:** `POST /end-user/chats/messages/send/:roomId`
 
 **Request Body:**
-
 ```json
 {
   "messageType": "location",
   "messageText": "Let's meet here",
   "locationData": {
     "lat": 28.6139,
-    "lng": 77.209,
+    "lng": 77.2090,
     "address": "Connaught Place, New Delhi"
   }
 }
 ```
 
 **Response:**
-
 ```json
 {
   "success": true,
@@ -390,12 +363,10 @@ Get paginated messages for a room.
 **Endpoint:** `GET /end-user/chats/messages/list/:roomId`
 
 **Query Parameters:**
-
 - `page` (number, optional): Page number (default: `1`)
 - `limit` (number, optional): Messages per page (default: `50`)
 
 **Response:**
-
 ```json
 {
   "success": true,
@@ -420,7 +391,7 @@ Get paginated messages for a room.
         "id": 789,
         "fullName": "John Doe",
         "profile": {
-          "profilePictureUrl": "http://localhost:5000/uploads/..."
+          "profilePhoto": "https://res.cloudinary.com/your-cloud/image/upload/eclassify_app/uploads/profiles/user-789/photo.jpg"
         }
       },
       "replyToMessage": null
@@ -454,7 +425,7 @@ Get paginated messages for a room.
       "messageText": "Let's meet here",
       "messageMetadata": {
         "lat": 28.6139,
-        "lng": 77.209,
+        "lng": 77.2090,
         "address": "Connaught Place, New Delhi"
       },
       "isRead": false,
@@ -497,7 +468,6 @@ Edit own message (within 15 minutes, no replies).
 **Endpoint:** `PATCH /end-user/chats/messages/edit/:messageId`
 
 **Request Body:**
-
 ```json
 {
   "messageText": "Updated message text"
@@ -505,7 +475,6 @@ Edit own message (within 15 minutes, no replies).
 ```
 
 **Response:**
-
 ```json
 {
   "success": true,
@@ -523,7 +492,6 @@ Soft delete own message.
 **Endpoint:** `DELETE /end-user/chats/messages/delete/:messageId`
 
 **Response:**
-
 ```json
 {
   "success": true,
@@ -541,7 +509,6 @@ Mark all unread messages in a room as read.
 **Endpoint:** `PATCH /end-user/chats/messages/mark-read/:roomId`
 
 **Response:**
-
 ```json
 {
   "success": true,
@@ -561,7 +528,6 @@ Make an offer on a listing (buyer only).
 **Endpoint:** `POST /end-user/chats/offers/create/:roomId`
 
 **Request Body:**
-
 ```json
 {
   "amount": 450000,
@@ -571,7 +537,6 @@ Make an offer on a listing (buyer only).
 ```
 
 **Response:**
-
 ```json
 {
   "success": true,
@@ -593,7 +558,6 @@ Get all offers for a room (negotiation history).
 **Endpoint:** `GET /end-user/chats/offers/list/:roomId`
 
 **Response:**
-
 ```json
 {
   "success": true,
@@ -645,7 +609,6 @@ Accept an offer (seller only).
 **Endpoint:** `PATCH /end-user/chats/offers/accept/:offerId`
 
 **Response:**
-
 ```json
 {
   "success": true,
@@ -663,7 +626,6 @@ Reject an offer (seller only).
 **Endpoint:** `PATCH /end-user/chats/offers/reject/:offerId`
 
 **Request Body:**
-
 ```json
 {
   "reason": "Price too low"
@@ -671,7 +633,6 @@ Reject an offer (seller only).
 ```
 
 **Response:**
-
 ```json
 {
   "success": true,
@@ -689,7 +650,6 @@ Withdraw pending offer (buyer only).
 **Endpoint:** `PATCH /end-user/chats/offers/withdraw/:offerId`
 
 **Response:**
-
 ```json
 {
   "success": true,
@@ -707,7 +667,6 @@ Make a counter offer (seller only).
 **Endpoint:** `POST /end-user/chats/offers/counter/:offerId`
 
 **Request Body:**
-
 ```json
 {
   "amount": 480000,
@@ -717,7 +676,6 @@ Make a counter offer (seller only).
 ```
 
 **Response:**
-
 ```json
 {
   "success": true,
@@ -741,7 +699,6 @@ Request seller's contact information (buyer only).
 **Endpoint:** `POST /end-user/chats/contact/request/:roomId`
 
 **Response:**
-
 ```json
 {
   "success": true,
@@ -759,7 +716,6 @@ Share contact information with buyer (seller only).
 **Endpoint:** `POST /end-user/chats/contact/share/:roomId`
 
 **Request Body:**
-
 ```json
 {
   "phone": "9175113022",
@@ -768,7 +724,6 @@ Share contact information with buyer (seller only).
 ```
 
 **Response:**
-
 ```json
 {
   "success": true,
@@ -789,12 +744,11 @@ Share contact information with buyer (seller only).
 **URL:** `ws://localhost:5000`
 
 **Authentication:**
-
 ```javascript
-const socket = io("http://localhost:5000", {
+const socket = io('http://localhost:5000', {
   auth: {
-    token: "your-jwt-token",
-  },
+    token: 'your-jwt-token'
+  }
 });
 ```
 
@@ -803,43 +757,37 @@ const socket = io("http://localhost:5000", {
 ### Client → Server Events
 
 #### join_room
-
 ```javascript
-socket.emit("join_room", { roomId: 123 });
+socket.emit('join_room', { roomId: 123 });
 ```
 
 #### leave_room
-
 ```javascript
-socket.emit("leave_room", { roomId: 123 });
+socket.emit('leave_room', { roomId: 123 });
 ```
 
 #### send_message
-
 ```javascript
-socket.emit("send_message", {
+socket.emit('send_message', {
   roomId: 123,
-  messageText: "Hello",
-  replyToMessageId: null,
+  messageText: 'Hello',
+  replyToMessageId: null
 });
 ```
 
 #### typing
-
 ```javascript
-socket.emit("typing", { roomId: 123 });
+socket.emit('typing', { roomId: 123 });
 ```
 
 #### stop_typing
-
 ```javascript
-socket.emit("stop_typing", { roomId: 123 });
+socket.emit('stop_typing', { roomId: 123 });
 ```
 
 #### mark_read
-
 ```javascript
-socket.emit("mark_read", { roomId: 123 });
+socket.emit('mark_read', { roomId: 123 });
 ```
 
 ---
@@ -847,81 +795,72 @@ socket.emit("mark_read", { roomId: 123 });
 ### Server → Client Events
 
 #### joined_room
-
 ```javascript
-socket.on("joined_room", (data) => {
-  console.log("Joined room:", data.roomId);
+socket.on('joined_room', (data) => {
+  console.log('Joined room:', data.roomId);
 });
 ```
 
 #### new_message
-
 ```javascript
-socket.on("new_message", (data) => {
-  console.log("New message:", data.message);
+socket.on('new_message', (data) => {
+  console.log('New message:', data.message);
   // data = { roomId, message: { id, senderId, messageType, messageText, createdAt } }
 });
 ```
 
 #### message_read
-
 ```javascript
-socket.on("message_read", (data) => {
-  console.log("Messages read:", data);
+socket.on('message_read', (data) => {
+  console.log('Messages read:', data);
   // data = { roomId, userId, readAt }
 });
 ```
 
 #### message_deleted
-
 ```javascript
-socket.on("message_deleted", (data) => {
-  console.log("Message deleted:", data);
+socket.on('message_deleted', (data) => {
+  console.log('Message deleted:', data);
   // data = { roomId, messageId }
 });
 ```
 
 #### user_typing
-
 ```javascript
-socket.on("user_typing", (data) => {
-  console.log("User typing:", data.userId);
+socket.on('user_typing', (data) => {
+  console.log('User typing:', data.userId);
   // data = { roomId, userId }
 });
 ```
 
 #### user_stop_typing
-
 ```javascript
-socket.on("user_stop_typing", (data) => {
-  console.log("User stopped typing:", data.userId);
+socket.on('user_stop_typing', (data) => {
+  console.log('User stopped typing:', data.userId);
   // data = { roomId, userId }
 });
 ```
 
 #### room_inactive
-
 ```javascript
-socket.on("room_inactive", (data) => {
-  console.log("Room inactive:", data.reason);
+socket.on('room_inactive', (data) => {
+  console.log('Room inactive:', data.reason);
   // data = { roomId, reason }
 });
 ```
 
 #### offer_received
-
 ```javascript
-socket.on("offer_received", (data) => {
-  console.log("New offer:", data);
+socket.on('offer_received', (data) => {
+  console.log('New offer:', data);
   // data = { roomId, offerId, amount }
 });
 ```
 
 #### error
-
 ```javascript
-socket.on("error", (data) => {
-  console.error("Socket error:", data.message);
+socket.on('error', (data) => {
+  console.error('Socket error:', data.message);
 });
 ```
 
@@ -939,7 +878,6 @@ All error responses follow this format:
 ```
 
 **Common Error Codes:**
-
 - `400` - Bad Request (validation errors, invalid input)
 - `401` - Unauthorized (missing or invalid token)
 - `403` - Forbidden (access denied, not room participant)
@@ -947,7 +885,6 @@ All error responses follow this format:
 - `500` - Internal Server Error
 
 **Example Error:**
-
 ```json
 {
   "success": false,
@@ -959,24 +896,21 @@ All error responses follow this format:
 
 ## Notes for Frontend
 
-1. **Authentication:** Include JWT token in all requests:
-   `Authorization: Bearer <token>`
+1. **Authentication:** Include JWT token in all requests: `Authorization: Bearer <token>`
 
 2. **Image Upload:** Use `FormData` for image messages:
-
    ```javascript
    const formData = new FormData();
-   formData.append("messageType", "image");
-   formData.append("messageText", "Caption here");
-   formData.append("image", fileObject);
+   formData.append('messageType', 'image');
+   formData.append('messageText', 'Caption here');
+   formData.append('image', fileObject);
    ```
 
 3. **Socket.io:** Connect once on app load, join/leave rooms as needed
 
 4. **Typing Indicators:** Throttle typing events (500ms) to reduce server load
 
-5. **Unread Counts:** Update locally when marking as read, refresh from API
-   periodically
+5. **Unread Counts:** Update locally when marking as read, refresh from API periodically
 
 6. **Real-time Updates:** Listen to socket events for instant UI updates
 
@@ -986,8 +920,7 @@ All error responses follow this format:
 
 9. **System Messages:** Display differently (no sender, special styling)
 
-10. **Offer Status:** Check `status` field - only `pending` offers can be
-    accepted/rejected/withdrawn
+10. **Offer Status:** Check `status` field - only `pending` offers can be accepted/rejected/withdrawn
 
 ---
 

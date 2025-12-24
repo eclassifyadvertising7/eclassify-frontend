@@ -2,52 +2,10 @@
 
 Complete API documentation for listing management endpoints.
 
----
+## Important Notes
 
-## Implementation Status
-
-### ✅ Phase 1: End-User Operations (COMPLETED)
-**Status:** Fully implemented and integrated with UI
-
-**Service:** `src/app/services/api/listingService.js`
-
-**UI Components:**
-- `src/components/car-form/page.jsx` - Car listing form
-- `src/components/property-form/page.jsx` - Property listing form
-
-**Features Implemented:**
-- ✅ Create listings (car and property)
-- ✅ Save as draft functionality
-- ✅ Upload media (images/videos)
-- ✅ Submit for approval workflow
-- ✅ Update listings (draft/rejected only)
-- ✅ Delete listings (soft delete)
-- ✅ Delete media
-- ✅ Mark as sold
-- ✅ Get user's listings with filters
-- ✅ Get listing by ID
-- ✅ Get user statistics
-
-**Complete Flow:**
-1. User creates listing → Draft status
-2. User uploads media → Media attached
-3. User submits → Pending status (awaiting admin approval)
-
-**Date Completed:** November 23, 2024
-
----
-
-### 🔄 Phase 2: Admin Panel Operations (PENDING)
-- Approve/reject listings
-- Manage all listings
-- Featured listings management
-- Admin statistics
-
-### 🔄 Phase 3: Public Browsing (PENDING)
-- Browse active listings
-- Search and filters
-- View listing details
-- Track views
+- **Favorite Counts**: All listing responses automatically include a `favoriteCount` field showing the total number of users who have favorited that listing.
+- **Authentication**: End-user endpoints require user authentication. Panel endpoints require admin/staff roles.
 
 ---
 
@@ -191,6 +149,7 @@ Create a new listing in draft status.
     "price": "1500000.00",
     "priceNegotiable": true,
     "status": "draft",
+    "postedByType": "owner",
     "stateId": 1,
     "cityId": 5,
     "locality": "Andheri West",
@@ -244,9 +203,15 @@ Get all listings created by the authenticated user.
       "slug": "toyota-camry-2020-abc123",
       "price": "1500000.00",
       "status": "active",
+      "postedByType": "owner",
       "isFeatured": false,
       "viewCount": 45,
       "createdAt": "2024-11-23T10:30:00.000Z",
+      "user": {
+        "id": 456,
+        "fullName": "John Doe",
+        "mobile": "9876543210"
+      },
       "category": {
         "id": 1,
         "name": "Cars",
@@ -597,7 +562,46 @@ Get all listings with filters (admin view).
 {
   "success": true,
   "message": "Listings retrieved successfully",
-  "data": [ /* array of listings */ ],
+  "data": [
+    {
+      "id": 123,
+      "title": "Toyota Camry 2020",
+      "slug": "toyota-camry-2020-abc123",
+      "price": "1500000.00",
+      "status": "pending",
+      "postedByType": "owner",
+      "isFeatured": false,
+      "viewCount": 12,
+      "createdAt": "2024-11-23T10:30:00.000Z",
+      "user": {
+        "id": 456,
+        "fullName": "John Doe",
+        "mobile": "9876543210"
+      },
+      "category": {
+        "id": 1,
+        "name": "Cars",
+        "slug": "cars"
+      },
+      "state": {
+        "id": 1,
+        "name": "Maharashtra"
+      },
+      "city": {
+        "id": 5,
+        "name": "Mumbai"
+      },
+      "media": [
+        {
+          "id": 1,
+          "mediaUrl": "http://localhost:5000/uploads/listings/2024/11/image1.jpg",
+          "thumbnailUrl": "http://localhost:5000/uploads/listings/2024/11/image1.jpg",
+          "mediaType": "image",
+          "isPrimary": true
+        }
+      ]
+    }
+  ],
   "pagination": {
     "total": 150,
     "page": 1,
@@ -653,7 +657,10 @@ Get detailed listing information (admin view).
       "id": 456,
       "fullName": "John Doe",
       "email": "john@example.com",
-      "mobile": "9876543210"
+      "mobile": "9876543210",
+      "profile": {
+        "profilePhoto": "https://res.cloudinary.com/your-cloud/image/upload/eclassify_app/uploads/profiles/user-456/photo.jpg"
+      }
     },
     /* full listing details */
   }
@@ -794,8 +801,52 @@ Browse all active listings.
 {
   "success": true,
   "message": "Listings retrieved successfully",
-  "data": [ /* array of active listings */ ],
-  "pagination": { /* pagination info */ }
+  "data": [
+    {
+      "id": 123,
+      "title": "Toyota Camry 2020",
+      "slug": "toyota-camry-2020-abc123",
+      "price": "1500000.00",
+      "status": "active",
+      "postedByType": "owner",
+      "isFeatured": false,
+      "viewCount": 45,
+      "createdAt": "2024-11-23T10:30:00.000Z",
+      "user": {
+        "id": 456,
+        "fullName": "John Doe",
+        "mobile": "9876543210"
+      },
+      "category": {
+        "id": 1,
+        "name": "Cars",
+        "slug": "cars"
+      },
+      "state": {
+        "id": 1,
+        "name": "Maharashtra"
+      },
+      "city": {
+        "id": 5,
+        "name": "Mumbai"
+      },
+      "media": [
+        {
+          "id": 1,
+          "mediaUrl": "http://localhost:5000/uploads/listings/2024/11/image1.jpg",
+          "thumbnailUrl": "http://localhost:5000/uploads/listings/2024/11/image1.jpg",
+          "mediaType": "image",
+          "isPrimary": true
+        }
+      ]
+    }
+  ],
+  "pagination": {
+    "total": 980,
+    "page": 1,
+    "limit": 20,
+    "totalPages": 49
+  }
 }
 ```
 
@@ -816,7 +867,47 @@ Get featured listings only.
 {
   "success": true,
   "message": "Listings retrieved successfully",
-  "data": [ /* array of featured listings */ ]
+  "data": [
+    {
+      "id": 123,
+      "title": "Toyota Camry 2020",
+      "slug": "toyota-camry-2020-abc123",
+      "price": "1500000.00",
+      "status": "active",
+      "postedByType": "owner",
+      "isFeatured": true,
+      "featuredUntil": "2024-11-30T12:00:00.000Z",
+      "viewCount": 120,
+      "createdAt": "2024-11-23T10:30:00.000Z",
+      "user": {
+        "id": 456,
+        "fullName": "John Doe",
+        "mobile": "9876543210"
+      },
+      "category": {
+        "id": 1,
+        "name": "Cars",
+        "slug": "cars"
+      },
+      "state": {
+        "id": 1,
+        "name": "Maharashtra"
+      },
+      "city": {
+        "id": 5,
+        "name": "Mumbai"
+      },
+      "media": [
+        {
+          "id": 1,
+          "mediaUrl": "http://localhost:5000/uploads/listings/2024/11/image1.jpg",
+          "thumbnailUrl": "http://localhost:5000/uploads/listings/2024/11/image1.jpg",
+          "mediaType": "image",
+          "isPrimary": true
+        }
+      ]
+    }
+  ]
 }
 ```
 
@@ -844,12 +935,16 @@ Get detailed listing information by slug.
     "description": "Well maintained...",
     "price": "1500000.00",
     "status": "active",
+    "postedByType": "owner",
     "viewCount": 45,
     "carListing": { /* car details */ },
     "media": [ /* media array */ ],
     "user": {
       "id": 456,
-      "fullName": "John Doe"
+      "fullName": "John Doe",
+      "profile": {
+        "profilePhoto": "https://res.cloudinary.com/your-cloud/image/upload/eclassify_app/uploads/profiles/user-456/photo.jpg"
+      }
     }
   }
 }
