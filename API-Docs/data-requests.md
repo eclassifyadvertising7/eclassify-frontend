@@ -449,6 +449,24 @@ Approve a data request and create the brand/model/variant/state/city.
 }
 ```
 
+**Request Body (Model Approval with Variant)**:
+```json
+{
+  "createData": {
+    "name": "Model 3",
+    "launchYear": 2017,
+    "variant": {
+      "variantName": "Long Range AWD",
+      "modelYear": 2024,
+      "bodyType": "sedan",
+      "fuelType": "electric",
+      "transmissionType": "automatic",
+      "seatingCapacity": 5
+    }
+  }
+}
+```
+
 **Request Body (Variant Approval)**:
 ```json
 {
@@ -540,6 +558,7 @@ Approve a data request and create the brand/model/variant/state/city.
 **Notes**:
 - Approval creates the actual entity in the database
 - If parent entities (brand/model/state) don't exist, they are auto-created
+- When approving a model request, you can optionally include variant data to create both model and variant in one operation
 - Transaction ensures all-or-nothing operation
 - Slug is auto-generated from names
 

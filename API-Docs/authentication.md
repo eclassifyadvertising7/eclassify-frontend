@@ -62,6 +62,10 @@ Content-Type: application/json
       "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
       "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
       "token_type": "Bearer"
+    },
+    "counts": {
+      "unreadNotifications": 0,
+      "unreadChats": 0
     }
   },
   "timestamp": "2025-11-23T10:30:00.000Z"
@@ -150,6 +154,10 @@ Content-Type: application/json
       "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
       "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
       "token_type": "Bearer"
+    },
+    "counts": {
+      "unreadNotifications": 5,
+      "unreadChats": 3
     }
   },
   "timestamp": "2025-11-23T10:30:00.000Z"
@@ -453,8 +461,8 @@ curl -X POST http://localhost:5000/api/auth/logout \
 - `exp`: Token expiration timestamp
 
 ### Token Types
-- **Access Token**: Short-lived (default: 15 minutes), used for API authentication
-- **Refresh Token**: Long-lived (default: 7 days), used to get new access tokens
+- **Access Token**: Short-lived (default: 7 days), used for API authentication
+- **Refresh Token**: Long-lived (default: 30 days), used to get new access tokens
 
 ### Token Usage
 Include the access token in the `Authorization` header for protected routes:
@@ -492,8 +500,8 @@ Authorization: Bearer <your_access_token>
 2. **Password Requirements**: Minimum 6 characters (can be enhanced with complexity rules).
 
 3. **Token Expiry**: 
-   - Access tokens expire in 15 minutes (configurable via `ACCESS_TOKEN_EXPIRY`)
-   - Refresh tokens expire in 7 days (configurable via `REFRESH_TOKEN_EXPIRY`)
+   - Access tokens expire in 7 days (configurable via `ACCESS_TOKEN_EXPIRY`)
+   - Refresh tokens expire in 30 days (configurable via `REFRESH_TOKEN_EXPIRY`)
 
 4. **Account Status**: Users with status `blocked`, `suspended`, or inactive accounts cannot login or refresh tokens.
 
@@ -506,3 +514,9 @@ Authorization: Bearer <your_access_token>
 8. **Response Format**: All responses include a `timestamp` field with ISO 8601 format.
 
 9. **Token Storage**: Store refresh tokens securely (httpOnly cookies recommended). Access tokens can be stored in memory.
+
+10. **Unread Counts**: Login and signup responses include real-time unread counts for notifications and chat messages. These counts are calculated at the time of authentication:
+    - `unreadNotifications`: Total unread notifications for the user
+    - `unreadChats`: Total unread chat messages across all chat rooms
+    - New users will have both counts as 0
+    - For real-time updates after login, use Socket.io (see `SOCKET-UNREAD-COUNTS-PLAN.md`)

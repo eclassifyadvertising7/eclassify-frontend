@@ -4,6 +4,12 @@
  */
 
 import { io } from 'socket.io-client';
+import { API_BASE_URL } from './httpClient';
+
+// Get base URL from environment, remove /api suffix for socket connection
+const getSocketUrl = () => {
+  return API_BASE_URL.replace('/api', '');
+};
 
 class SocketService {
   constructor() {
@@ -25,7 +31,7 @@ class SocketService {
       return null;
     }
 
-    const socketUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5000';
+    const socketUrl = getSocketUrl();
 
     this.socket = io(socketUrl, {
       auth: {

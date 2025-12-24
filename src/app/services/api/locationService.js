@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
+import httpClient from '../httpClient'
 
 export const getCities = async (searchTerm = '', limit = 100) => {
   try {
@@ -11,18 +11,7 @@ export const getCities = async (searchTerm = '', limit = 100) => {
       queryParams.append('limit', limit.toString())
     }
 
-    const response = await fetch(`${API_BASE_URL}/api/common/all-cities?${queryParams.toString()}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-
-    const result = await response.json()
+    const result = await httpClient.get(`/common/all-cities?${queryParams.toString()}`)
     return result
   } catch (error) {
     console.error('Get cities error:', error)
@@ -40,18 +29,7 @@ export const getPopularCities = async (limit = 10) => {
     queryParams.append('popular', 'true')
     queryParams.append('limit', limit.toString())
 
-    const response = await fetch(`${API_BASE_URL}/api/common/all-cities?${queryParams.toString()}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-
-    const result = await response.json()
+    const result = await httpClient.get(`/common/all-cities?${queryParams.toString()}`)
     return result
   } catch (error) {
     console.error('Get popular cities error:', error)
@@ -65,18 +43,7 @@ export const getPopularCities = async (limit = 10) => {
 
 export const getCityById = async (cityId) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/common/all-cities/${cityId}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-
-    const result = await response.json()
+    const result = await httpClient.get(`/common/all-cities/${cityId}`)
     return result
   } catch (error) {
     console.error('Get city by ID error:', error)
@@ -95,18 +62,7 @@ export const searchCitiesByLocation = async (latitude, longitude, radius = 50) =
     queryParams.append('lng', longitude.toString())
     queryParams.append('radius', radius.toString())
 
-    const response = await fetch(`${API_BASE_URL}/api/common/all-cities/nearby?${queryParams.toString()}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-
-    const result = await response.json()
+    const result = await httpClient.get(`/common/all-cities/nearby?${queryParams.toString()}`)
     return result
   } catch (error) {
     console.error('Search cities by location error:', error)
