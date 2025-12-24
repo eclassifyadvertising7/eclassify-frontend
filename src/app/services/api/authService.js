@@ -1,16 +1,9 @@
-/**
- * Authentication Service
- * Handles user authentication, registration, and session management
- */
-
 import httpClient from '../httpClient';
 
-// Token validation helper
 const isValidToken = (token) => {
   return token && typeof token === 'string' && token.split('.').length === 3;
 };
 
-// Secure storage helper
 const secureStorage = {
   setItem: (key, value) => {
     if (typeof window === 'undefined') return;
@@ -40,11 +33,9 @@ const secureStorage = {
 };
 
 export const authService = {
-  // User registration with mobile and password
   signup: async (userData) => {
     const response = await httpClient.post('/auth/signup', userData);
     
-    // Store tokens if provided and valid
     if (response.success && response.data?.tokens) {
       const { access_token, refresh_token } = response.data.tokens;
       
@@ -58,11 +49,9 @@ export const authService = {
     return response;
   },
 
-  // User login with mobile and password
   login: async (credentials) => {
     const response = await httpClient.post('/auth/login', credentials);
     
-    // Store tokens if provided and valid
     if (response.success && response.data?.tokens) {
       const { access_token, refresh_token } = response.data.tokens;
       
@@ -76,12 +65,10 @@ export const authService = {
     return response;
   },
 
-  // Get user profile
   getProfile: async () => {
     return httpClient.get('/profile/me');
   },
 
-  // Refresh access token
   refreshToken: async () => {
     const refresh_token = secureStorage.getItem('refresh_token');
     if (!refresh_token) {
@@ -90,7 +77,6 @@ export const authService = {
 
     const response = await httpClient.post('/auth/refresh-token', { refresh_token });
     
-    // Update tokens if valid
     if (response.success && response.data?.tokens) {
       const { access_token, refresh_token: new_refresh_token } = response.data.tokens;
       
@@ -103,7 +89,6 @@ export const authService = {
     return response;
   },
 
-  // User logout
   logout: async () => {
     const refresh_token = secureStorage.getItem('refresh_token');
     
@@ -114,14 +99,12 @@ export const authService = {
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      // Clear local storage regardless of API call result
       secureStorage.removeItem('access_token');
       secureStorage.removeItem('refresh_token');
       secureStorage.removeItem('user');
     }
   },
 
-  // Get current user from localStorage
   getCurrentUser: () => {
     const userStr = secureStorage.getItem('user');
     try {
@@ -132,21 +115,18 @@ export const authService = {
     }
   },
 
-  // Check if user is authenticated
   isAuthenticated: () => {
     const token = secureStorage.getItem('access_token');
     return !!token && isValidToken(token);
   },
 
-  // Send OTP for signup or login
   sendOTP: async (mobile, type = 'login', countryCode = '+91', fullName = null, email = null) => {
     const payload = { 
       mobile, 
       countryCode,
-      type // 'signup', 'login', or 'verification'
+      type
     };
     
-    // Include fullName and email for signup
     if (type === 'signup' && fullName) {
       payload.fullName = fullName;
     }
@@ -154,10 +134,15 @@ export const authService = {
       payload.email = email;
     }
     
-    return httpClient.post('/auth/otp/send', payload);
+    console.log('🔵 [sendOTP] Request payload:', payload);
+    const response = await httpClient.post('/auth/otp/send', payload);
+    console.log('🔵 [sendOTP] Backend response:', response);
+    console.log('🔵 [sendOTP] Response success:', response.success);
+    console.log('🔵 [sendOTP] Response data:', response.data);
+    console.log('🔵 [sendOTP] Response message:', response.message);
+    return response;
   },
 
-  // Verify OTP for signup (requires fullName)
   verifyOTPSignup: async (mobile, otp, fullName, countryCode = '+91', device_name = null, email = null) => {
     const payload = { 
       mobile, 
@@ -168,82 +153,128 @@ export const authService = {
       device_name: device_name || (typeof navigator !== 'undefined' ? navigator.userAgent : 'Unknown Device')
     };
     
-    // Include email if provided
     if (email) {
       payload.email = email;
     }
     
+    console.log('🟢 [verifyOTPSignup] Request payload:', payload);
     const response = await httpClient.post('/auth/otp/verify', payload);
+    console.log('🟢 [verifyOTPSignup] Backend response:', response);
+    console.log('🟢 [verifyOTPSignup] Response success:', response.success);
+    console.log('🟢 [verifyOTPSignup] Response data:', response.data);
+    console.log('🟢 [verifyOTPSignup] Response tokens:', response.data?.tokens);
+    console.log('🟢 [verifyOTPSignup] Response user:', response.data?.user);
     
     if (response.success && response.data?.tokens) {
       const { access_token, refresh_token } = response.data.tokens;
+      console.log('🟢 [verifyOTPSignup] Token validation - access_token valid:', isValidToken(access_token));
+      console.log('🟢 [verifyOTPSignup] Token validation - refresh_token valid:', isValidToken(refresh_token));
       
       if (isValidToken(access_token) && isValidToken(refresh_token)) {
         secureStorage.setItem('access_token', access_token);
         secureStorage.setItem('refresh_token', refresh_token);
         secureStorage.setItem('user', JSON.stringify(response.data.user));
+        console.log('🟢 [verifyOTPSignup] Tokens stored successfully');
+      } else {
+        console.error('🔴 [verifyOTPSignup] Invalid tokens received');
       }
+    } else {
+      console.error('🔴 [verifyOTPSignup] No tokens in response or request failed');
     }
     
     return response;
   },
 
-  // Verify OTP for login (no fullName required)
   verifyOTPLogin: async (mobile, otp, countryCode = '+91', device_name = null) => {
-    const response = await httpClient.post('/auth/otp/verify', { 
+    const payload = { 
       mobile, 
       otp, 
       type: 'login',
       countryCode,
       device_name: device_name || (typeof navigator !== 'undefined' ? navigator.userAgent : 'Unknown Device')
-    });
+    };
+    
+    console.log('🟡 [verifyOTPLogin] Request payload:', payload);
+    const response = await httpClient.post('/auth/otp/verify', payload);
+    console.log('🟡 [verifyOTPLogin] Backend response:', response);
+    console.log('🟡 [verifyOTPLogin] Response success:', response.success);
+    console.log('🟡 [verifyOTPLogin] Response data:', response.data);
+    console.log('🟡 [verifyOTPLogin] Response tokens:', response.data?.tokens);
+    console.log('🟡 [verifyOTPLogin] Response user:', response.data?.user);
     
     if (response.success && response.data?.tokens) {
       const { access_token, refresh_token } = response.data.tokens;
+      console.log('🟡 [verifyOTPLogin] Token validation - access_token valid:', isValidToken(access_token));
+      console.log('🟡 [verifyOTPLogin] Token validation - refresh_token valid:', isValidToken(refresh_token));
       
       if (isValidToken(access_token) && isValidToken(refresh_token)) {
         secureStorage.setItem('access_token', access_token);
         secureStorage.setItem('refresh_token', refresh_token);
         secureStorage.setItem('user', JSON.stringify(response.data.user));
+        console.log('🟡 [verifyOTPLogin] Tokens stored successfully');
+      } else {
+        console.error('🔴 [verifyOTPLogin] Invalid tokens received');
       }
+    } else {
+      console.error('🔴 [verifyOTPLogin] No tokens in response or request failed');
     }
     
     return response;
   },
 
-  // Verify OTP (separate from signup)
   verifyOTP: async (mobile, otp, countryCode = '+91') => {
-    return httpClient.post('/auth/otp/verify', { 
+    const payload = { 
       mobile, 
       otp, 
       countryCode
-    });
+    };
+    
+    console.log('🟣 [verifyOTP] Request payload:', payload);
+    const response = await httpClient.post('/auth/otp/verify', payload);
+    console.log('🟣 [verifyOTP] Backend response:', response);
+    console.log('🟣 [verifyOTP] Response success:', response.success);
+    console.log('🟣 [verifyOTP] Response data:', response.data);
+    console.log('🟣 [verifyOTP] Response message:', response.message);
+    return response;
   },
 
-  // Complete OTP-based signup (after OTP verification)
   otpSignup: async (mobile, email, fullName, countryCode = '+91', device_name = null) => {
-    const response = await httpClient.post('/auth/otp/signup', {
+    const payload = {
       mobile,
       email,
       fullName,
       countryCode,
       device_name: device_name || (typeof navigator !== 'undefined' ? navigator.userAgent : 'Unknown Device')
-    });
+    };
+    
+    console.log('🟠 [otpSignup] Request payload:', payload);
+    const response = await httpClient.post('/auth/otp/signup', payload);
+    console.log('🟠 [otpSignup] Backend response:', response);
+    console.log('🟠 [otpSignup] Response success:', response.success);
+    console.log('🟠 [otpSignup] Response data:', response.data);
+    console.log('🟠 [otpSignup] Response tokens:', response.data?.tokens);
+    console.log('🟠 [otpSignup] Response user:', response.data?.user);
     
     if (response.success && response.data?.tokens) {
       const { access_token, refresh_token } = response.data.tokens;
+      console.log('🟠 [otpSignup] Token validation - access_token valid:', isValidToken(access_token));
+      console.log('🟠 [otpSignup] Token validation - refresh_token valid:', isValidToken(refresh_token));
       
       if (isValidToken(access_token) && isValidToken(refresh_token)) {
         secureStorage.setItem('access_token', access_token);
         secureStorage.setItem('refresh_token', refresh_token);
         secureStorage.setItem('user', JSON.stringify(response.data.user));
+        console.log('🟠 [otpSignup] Tokens stored successfully');
+      } else {
+        console.error('🔴 [otpSignup] Invalid tokens received');
       }
+    } else {
+      console.error('🔴 [otpSignup] No tokens in response or request failed');
     }
     
     return response;
   },
 
-  // Google OAuth Authentication
   initiateGoogleAuth: (device_name = null) => {
     const deviceName = device_name || (typeof navigator !== 'undefined' ? navigator.userAgent : 'Unknown Device');
     const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000/api';
@@ -256,7 +287,6 @@ export const authService = {
     return authUrl;
   },
 
-  // Handle Google OAuth callback data
   handleGoogleCallback: (encodedData) => {
     try {
       const response = JSON.parse(decodeURIComponent(encodedData));
@@ -278,14 +308,12 @@ export const authService = {
     }
   },
 
-  // Complete Google user profile (add mobile number)
   completeGoogleProfile: async (mobile, countryCode = '+91') => {
     const response = await httpClient.post('/auth/google/complete-profile', {
       mobile,
       countryCode
     });
     
-    // Update user data in localStorage if successful
     if (response.success && response.data) {
       secureStorage.setItem('user', JSON.stringify(response.data));
     }

@@ -1,12 +1,6 @@
-/**
- * Category Service
- * Handles category management operations
- */
-
 import httpClient from '../httpClient';
 
 export const categoryService = {
-  // Public endpoints
   getActiveCategories: async (featured = null) => {
     const params = featured !== null ? `?featured=${featured}` : '';
     return httpClient.get(`/public/categories${params}`);
@@ -16,7 +10,6 @@ export const categoryService = {
     return httpClient.get(`/public/categories/${slug}`);
   },
 
-  // Admin panel endpoints
   getAllCategories: async (params = {}) => {
     const queryString = new URLSearchParams(params).toString();
     return httpClient.get(`/panel/categories${queryString ? `?${queryString}` : ''}`);

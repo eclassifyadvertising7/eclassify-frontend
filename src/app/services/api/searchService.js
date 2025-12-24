@@ -4,7 +4,6 @@ export const searchListings = async (filters = {}) => {
   try {
     const queryParams = new URLSearchParams()
     
-    // Add all non-empty filters to query params
     Object.entries(filters).forEach(([key, value]) => {
       if (value !== "" && value !== null && value !== false && value !== undefined) {
         queryParams.append(key, value.toString())

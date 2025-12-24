@@ -1,13 +1,5 @@
-/**
- * Chat Service
- * Handles all chat-related API calls
- */
-
 import httpClient from "@/app/services/httpClient";
 
-/**
- * Get user's chat rooms with filters
- */
 export const getChatRooms = async (filters = {}) => {
   try {
     const params = new URLSearchParams();
@@ -26,9 +18,6 @@ export const getChatRooms = async (filters = {}) => {
   }
 };
 
-/**
- * Create or get existing chat room for a listing
- */
 export const createOrGetChatRoom = async (listingId) => {
   try {
     return await httpClient.post('/end-user/chats/rooms/create', { listingId });
@@ -38,9 +27,6 @@ export const createOrGetChatRoom = async (listingId) => {
   }
 };
 
-/**
- * Get specific room details
- */
 export const getRoomDetails = async (roomId) => {
   try {
     return await httpClient.get(`/end-user/chats/rooms/view/${roomId}`);
@@ -50,9 +36,6 @@ export const getRoomDetails = async (roomId) => {
   }
 };
 
-/**
- * Delete chat room
- */
 export const deleteChatRoom = async (roomId) => {
   try {
     return await httpClient.delete(`/end-user/chats/rooms/delete/${roomId}`);
@@ -62,9 +45,6 @@ export const deleteChatRoom = async (roomId) => {
   }
 };
 
-/**
- * Toggle important flag on room
- */
 export const toggleImportant = async (roomId, isImportant) => {
   try {
     return await httpClient.patch(`/end-user/chats/rooms/important/${roomId}`, { isImportant });
@@ -74,9 +54,6 @@ export const toggleImportant = async (roomId, isImportant) => {
   }
 };
 
-/**
- * Block/unblock user in room
- */
 export const blockUser = async (roomId, blocked, reason = '') => {
   try {
     return await httpClient.patch(`/end-user/chats/rooms/block/${roomId}`, { blocked, reason });
@@ -86,9 +63,6 @@ export const blockUser = async (roomId, blocked, reason = '') => {
   }
 };
 
-/**
- * Report user in room
- */
 export const reportUser = async (roomId, reportType, reason) => {
   try {
     return await httpClient.post(`/end-user/chats/rooms/report/${roomId}`, { reportType, reason });
@@ -98,9 +72,6 @@ export const reportUser = async (roomId, reportType, reason) => {
   }
 };
 
-/**
- * Get messages for a room
- */
 export const getMessages = async (roomId, page = 1, limit = 50) => {
   try {
     const params = new URLSearchParams({ page, limit });
@@ -111,9 +82,6 @@ export const getMessages = async (roomId, page = 1, limit = 50) => {
   }
 };
 
-/**
- * Send text message
- */
 export const sendTextMessage = async (roomId, messageText, replyToMessageId = null) => {
   try {
     return await httpClient.post(`/end-user/chats/messages/send/${roomId}`, {
@@ -127,9 +95,6 @@ export const sendTextMessage = async (roomId, messageText, replyToMessageId = nu
   }
 };
 
-/**
- * Send image message
- */
 export const sendImageMessage = async (roomId, imageFile, caption = '') => {
   try {
     const formData = new FormData();
@@ -144,9 +109,6 @@ export const sendImageMessage = async (roomId, imageFile, caption = '') => {
   }
 };
 
-/**
- * Send location message
- */
 export const sendLocationMessage = async (roomId, locationData, messageText = '') => {
   try {
     return await httpClient.post(`/end-user/chats/messages/send/${roomId}`, {
@@ -160,9 +122,6 @@ export const sendLocationMessage = async (roomId, locationData, messageText = ''
   }
 };
 
-/**
- * Edit message
- */
 export const editMessage = async (messageId, messageText) => {
   try {
     return await httpClient.patch(`/end-user/chats/messages/edit/${messageId}`, { messageText });
@@ -172,9 +131,6 @@ export const editMessage = async (messageId, messageText) => {
   }
 };
 
-/**
- * Delete message
- */
 export const deleteMessage = async (messageId) => {
   try {
     return await httpClient.delete(`/end-user/chats/messages/delete/${messageId}`);
@@ -184,9 +140,6 @@ export const deleteMessage = async (messageId) => {
   }
 };
 
-/**
- * Mark messages as read
- */
 export const markMessagesAsRead = async (roomId) => {
   try {
     return await httpClient.patch(`/end-user/chats/messages/mark-read/${roomId}`);
@@ -196,9 +149,6 @@ export const markMessagesAsRead = async (roomId) => {
   }
 };
 
-/**
- * Request contact information
- */
 export const requestContact = async (roomId) => {
   try {
     return await httpClient.post(`/end-user/chats/contact/request/${roomId}`);
@@ -208,9 +158,6 @@ export const requestContact = async (roomId) => {
   }
 };
 
-/**
- * Share contact information
- */
 export const shareContact = async (roomId, phone, email) => {
   try {
     return await httpClient.post(`/end-user/chats/contact/share/${roomId}`, { phone, email });

@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react"
 import { Heart, Search, SlidersHorizontal, Filter } from "lucide-react"
 import Link from "next/link"
-import { browseCategoryListings } from "@/app/services/api/publicListingsService"
+import publicListingsService from "@/app/services/api/publicListingsService"
 import FilterPanel from "./filters/FilterPanel"
 import MobileFilterButton from "./filters/MobileFilterButton"
 import ActiveFilters from "./filters/ActiveFilters"
@@ -42,7 +42,7 @@ export default function CategoryListings({ categorySlug }) {
     setLoading(true)
     setError(null)
     try {
-      const result = await browseCategoryListings(categorySlug, filters)
+      const result = await publicListingsService.browseCategoryListings(categorySlug, filters)
       
       if (result.success) {
         setListings(result.data || [])

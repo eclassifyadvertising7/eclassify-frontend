@@ -1,18 +1,5 @@
 import httpClient from "@/app/services/httpClient";
 
-/**
- * Subscription Service
- * Handles all subscription/pricing plan related API calls
- */
-
-// ============================================
-// END USER ENDPOINTS
-// ============================================
-
-/**
- * Get all available subscription plans (End User)
- * @returns {Promise<Array>} List of active subscription plans
- */
 export const getPlans = async () => {
   try {
     const response = await httpClient.get("/public/subscription-plans");
@@ -23,11 +10,6 @@ export const getPlans = async () => {
   }
 };
 
-/**
- * Get subscription plans by category (End User)
- * @param {number} categoryId - The category ID
- * @returns {Promise<Array>} List of active subscription plans for the category
- */
 export const getPlansByCategory = async (categoryId) => {
   try {
     const response = await httpClient.get(`/public/subscription-plans/category/${categoryId}`);
@@ -38,11 +20,6 @@ export const getPlansByCategory = async (categoryId) => {
   }
 };
 
-/**
- * Get details of a specific plan (End User)
- * @param {number|string} planId - The plan ID
- * @returns {Promise<Object>} Plan details
- */
 export const getPlanDetails = async (planId) => {
   try {
     const response = await httpClient.get(`/public/subscription-plans/${planId}`);
@@ -53,11 +30,6 @@ export const getPlanDetails = async (planId) => {
   }
 };
 
-/**
- * Get all my subscriptions (End User)
- * @param {Object} filters - Optional filters (status, page, limit)
- * @returns {Promise<Object>} Response with subscriptions and pagination
- */
 export const getMySubscriptions = async (filters = {}) => {
   try {
     const params = new URLSearchParams();
@@ -73,11 +45,6 @@ export const getMySubscriptions = async (filters = {}) => {
   }
 };
 
-/**
- * Get my subscription by ID (End User)
- * @param {number|string} subscriptionId - The subscription ID
- * @returns {Promise<Object>} Response with subscription details
- */
 export const getMySubscriptionById = async (subscriptionId) => {
   try {
     return await httpClient.get(`/end-user/subscriptions/${subscriptionId}`);
@@ -87,10 +54,6 @@ export const getMySubscriptionById = async (subscriptionId) => {
   }
 };
 
-/**
- * Get active subscription (End User)
- * @returns {Promise<Object>} Response with active subscription
- */
 export const getActiveSubscription = async () => {
   try {
     return await httpClient.get("/end-user/subscriptions/active");
@@ -100,11 +63,6 @@ export const getActiveSubscription = async () => {
   }
 };
 
-/**
- * Get subscription history (End User)
- * @param {Object} pagination - Pagination options (page, limit)
- * @returns {Promise<Object>} Response with subscription history
- */
 export const getSubscriptionHistory = async (pagination = {}) => {
   try {
     const params = new URLSearchParams();
@@ -119,12 +77,6 @@ export const getSubscriptionHistory = async (pagination = {}) => {
   }
 };
 
-/**
- * Cancel subscription (End User)
- * @param {number|string} subscriptionId - The subscription ID
- * @param {string} reason - Cancellation reason
- * @returns {Promise<Object>} Response
- */
 export const cancelSubscription = async (subscriptionId, reason) => {
   try {
     return await httpClient.post(`/end-user/subscriptions/${subscriptionId}/cancel`, { reason });
@@ -134,15 +86,6 @@ export const cancelSubscription = async (subscriptionId, reason) => {
   }
 };
 
-// ============================================
-// ADMIN ENDPOINTS
-// ============================================
-
-/**
- * Get all subscription plans (Admin)
- * @param {Object} filters - Optional filters (isActive, isPublic, planCode, categoryId)
- * @returns {Promise<Object>} Response with plans data
- */
 export const getAllPlans = async (filters = {}) => {
   try {
     const params = new URLSearchParams();
@@ -160,11 +103,6 @@ export const getAllPlans = async (filters = {}) => {
   }
 };
 
-/**
- * Get plan by ID (Admin)
- * @param {number|string} planId - The plan ID
- * @returns {Promise<Object>} Response with plan details
- */
 export const getPlanById = async (planId) => {
   try {
     return await httpClient.get(`/panel/subscription-plans/${planId}`);
@@ -174,11 +112,6 @@ export const getPlanById = async (planId) => {
   }
 };
 
-/**
- * Create subscription plan (Admin)
- * @param {Object} planData - Plan data
- * @returns {Promise<Object>} Response with created plan
- */
 export const createPlan = async (planData) => {
   try {
     return await httpClient.post("/panel/subscription-plans", planData);
@@ -188,12 +121,6 @@ export const createPlan = async (planData) => {
   }
 };
 
-/**
- * Update subscription plan (Admin)
- * @param {number|string} planId - The plan ID
- * @param {Object} planData - Updated plan data
- * @returns {Promise<Object>} Response with updated plan
- */
 export const updatePlan = async (planId, planData) => {
   try {
     return await httpClient.put(`/panel/subscription-plans/${planId}`, planData);
@@ -203,11 +130,6 @@ export const updatePlan = async (planId, planData) => {
   }
 };
 
-/**
- * Delete subscription plan (Admin)
- * @param {number|string} planId - The plan ID
- * @returns {Promise<Object>} Response
- */
 export const deletePlan = async (planId) => {
   try {
     return await httpClient.delete(`/panel/subscription-plans/${planId}`);
@@ -217,12 +139,6 @@ export const deletePlan = async (planId) => {
   }
 };
 
-/**
- * Update plan status (Admin)
- * @param {number|string} planId - The plan ID
- * @param {boolean} isActive - Active status
- * @returns {Promise<Object>} Response
- */
 export const updatePlanStatus = async (planId, isActive) => {
   try {
     return await httpClient.patch(`/panel/subscription-plans/status/${planId}`, { isActive });
@@ -232,12 +148,6 @@ export const updatePlanStatus = async (planId, isActive) => {
   }
 };
 
-/**
- * Update plan visibility (Admin)
- * @param {number|string} planId - The plan ID
- * @param {boolean} isPublic - Public visibility
- * @returns {Promise<Object>} Response
- */
 export const updatePlanVisibility = async (planId, isPublic) => {
   try {
     return await httpClient.patch(`/panel/subscription-plans/visibility/${planId}`, { isPublic });
@@ -247,11 +157,6 @@ export const updatePlanVisibility = async (planId, isPublic) => {
   }
 };
 
-/**
- * Get all user subscriptions (Admin)
- * @param {Object} filters - Optional filters (status, userId, planId, dateFrom, dateTo, page, limit)
- * @returns {Promise<Object>} Response with subscriptions and pagination
- */
 export const getAllUserSubscriptions = async (filters = {}) => {
   try {
     const params = new URLSearchParams();
@@ -271,11 +176,6 @@ export const getAllUserSubscriptions = async (filters = {}) => {
   }
 };
 
-/**
- * Get user subscription by ID (Admin)
- * @param {number|string} subscriptionId - The subscription ID
- * @returns {Promise<Object>} Response with subscription details
- */
 export const getUserSubscriptionById = async (subscriptionId) => {
   try {
     return await httpClient.get(`/panel/subscriptions/${subscriptionId}`);
@@ -285,11 +185,6 @@ export const getUserSubscriptionById = async (subscriptionId) => {
   }
 };
 
-/**
- * Create subscription manually (Admin)
- * @param {Object} subscriptionData - Subscription data
- * @returns {Promise<Object>} Response with created subscription
- */
 export const createUserSubscription = async (subscriptionData) => {
   try {
     return await httpClient.post("/panel/subscriptions", subscriptionData);
@@ -299,12 +194,6 @@ export const createUserSubscription = async (subscriptionData) => {
   }
 };
 
-/**
- * Update subscription (Admin)
- * @param {number|string} subscriptionId - The subscription ID
- * @param {Object} subscriptionData - Updated subscription data
- * @returns {Promise<Object>} Response with updated subscription
- */
 export const updateUserSubscription = async (subscriptionId, subscriptionData) => {
   try {
     return await httpClient.put(`/panel/subscriptions/${subscriptionId}`, subscriptionData);
@@ -314,11 +203,6 @@ export const updateUserSubscription = async (subscriptionId, subscriptionData) =
   }
 };
 
-/**
- * Delete subscription (Admin)
- * @param {number|string} subscriptionId - The subscription ID
- * @returns {Promise<Object>} Response
- */
 export const deleteUserSubscription = async (subscriptionId) => {
   try {
     return await httpClient.delete(`/panel/subscriptions/${subscriptionId}`);
@@ -328,12 +212,6 @@ export const deleteUserSubscription = async (subscriptionId) => {
   }
 };
 
-/**
- * Update subscription status (Admin)
- * @param {number|string} subscriptionId - The subscription ID
- * @param {string} status - New status
- * @returns {Promise<Object>} Response
- */
 export const updateUserSubscriptionStatus = async (subscriptionId, status) => {
   try {
     return await httpClient.patch(`/panel/subscriptions/status/${subscriptionId}`, { status });
@@ -343,12 +221,6 @@ export const updateUserSubscriptionStatus = async (subscriptionId, status) => {
   }
 };
 
-/**
- * Extend subscription (Admin)
- * @param {number|string} subscriptionId - The subscription ID
- * @param {number} extensionDays - Number of days to extend
- * @returns {Promise<Object>} Response
- */
 export const extendSubscription = async (subscriptionId, extensionDays) => {
   try {
     return await httpClient.post(`/panel/subscriptions/${subscriptionId}/extend`, { extensionDays });
@@ -359,17 +231,14 @@ export const extendSubscription = async (subscriptionId, extensionDays) => {
 };
 
 const subscriptionService = {
-  // End User - Plans
   getPlans,
   getPlansByCategory,
   getPlanDetails,
-  // End User - Subscriptions
   getMySubscriptions,
   getMySubscriptionById,
   getActiveSubscription,
   getSubscriptionHistory,
   cancelSubscription,
-  // Admin - Plans
   getAllPlans,
   getPlanById,
   createPlan,
@@ -377,7 +246,6 @@ const subscriptionService = {
   deletePlan,
   updatePlanStatus,
   updatePlanVisibility,
-  // Admin - User Subscriptions
   getAllUserSubscriptions,
   getUserSubscriptionById,
   createUserSubscription,

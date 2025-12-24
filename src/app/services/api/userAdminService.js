@@ -1,14 +1,6 @@
 import httpClient from "@/app/services/httpClient"
 
-/**
- * User Admin Service
- * Handles all user management operations for admin panel
- */
-
 export const userAdminService = {
-  /**
-   * Get list of external users (user role)
-   */
   getExternalUsers: async (filters = {}) => {
     try {
       const params = new URLSearchParams()
@@ -23,13 +15,10 @@ export const userAdminService = {
       return await httpClient.get(endpoint)
     } catch (error) {
       console.error('Error fetching external users:', error)
-      throw error
+      throw error;
     }
   },
 
-  /**
-   * Get list of internal users (staff roles)
-   */
   getInternalUsers: async (filters = {}) => {
     try {
       const params = new URLSearchParams()
@@ -48,9 +37,6 @@ export const userAdminService = {
     }
   },
 
-  /**
-   * Get user details
-   */
   getUserDetails: async (userId) => {
     try {
       return await httpClient.get(`/panel/users/view/${userId}`)
@@ -60,9 +46,6 @@ export const userAdminService = {
     }
   },
 
-  /**
-   * Toggle user status (activate/deactivate)
-   */
   toggleUserStatus: async (userId, isActive) => {
     try {
       return await httpClient.patch(`/panel/users/status/${userId}`, { isActive })
@@ -72,9 +55,6 @@ export const userAdminService = {
     }
   },
 
-  /**
-   * Toggle auto-approve for user's listings
-   */
   toggleAutoApprove: async (userId, isEnabled) => {
     try {
       return await httpClient.patch(`/panel/users/auto-approve/${userId}`, { isEnabled })
@@ -84,9 +64,6 @@ export const userAdminService = {
     }
   },
 
-  /**
-   * Update KYC status
-   */
   updateKycStatus: async (userId, kycStatus) => {
     try {
       return await httpClient.patch(`/panel/users/kyc-status/${userId}`, { kycStatus })
@@ -96,9 +73,6 @@ export const userAdminService = {
     }
   },
 
-  /**
-   * Make user verified
-   */
   verifyUser: async (userId) => {
     try {
       return await httpClient.patch(`/panel/users/verify/${userId}`)
@@ -108,9 +82,6 @@ export const userAdminService = {
     }
   },
 
-  /**
-   * Delete user (soft delete)
-   */
   deleteUser: async (userId) => {
     try {
       return await httpClient.delete(`/panel/users/delete/${userId}`)
@@ -120,9 +91,6 @@ export const userAdminService = {
     }
   },
 
-  /**
-   * Get user statistics
-   */
   getUserStats: async () => {
     try {
       return await httpClient.get('/panel/users/statistics')
@@ -132,9 +100,6 @@ export const userAdminService = {
     }
   },
 
-  /**
-   * Create internal user
-   */
   createInternalUser: async (userData) => {
     try {
       return await httpClient.post('/panel/users/create', userData)
@@ -144,9 +109,6 @@ export const userAdminService = {
     }
   },
 
-  /**
-   * Update user subscription features (Super Admin only)
-   */
   updateUserSubscription: async (subscriptionId, subscriptionData) => {
     try {
       return await httpClient.patch(`/panel/subscriptions/${subscriptionId}`, subscriptionData)

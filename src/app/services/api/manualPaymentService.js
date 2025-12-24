@@ -1,20 +1,5 @@
 import httpClient from "@/app/services/httpClient";
 
-/**
- * Manual Payment Service
- * Handles manual payment verification for subscriptions
- * ⚠️ TEMPORARY - Remove when payment gateway is implemented
- */
-
-// ============================================
-// END USER ENDPOINTS
-// ============================================
-
-/**
- * Create manual payment subscription (End User)
- * @param {FormData} formData - Form data with planId, upiId, transactionId, paymentProof (optional)
- * @returns {Promise<Object>} Response with created subscription
- */
 export const createManualPayment = async (formData) => {
   try {
     return await httpClient.upload("/manual-payments/create", formData);
@@ -24,15 +9,6 @@ export const createManualPayment = async (formData) => {
   }
 };
 
-// ============================================
-// ADMIN ENDPOINTS
-// ============================================
-
-/**
- * Get all manual payment subscriptions (Admin)
- * @param {Object} filters - Optional filters (status, dateFrom, dateTo, search, userId, planId, page, limit)
- * @returns {Promise<Object>} Response with subscriptions and pagination
- */
 export const getManualPayments = async (filters = {}) => {
   try {
     const params = new URLSearchParams();
@@ -53,11 +29,6 @@ export const getManualPayments = async (filters = {}) => {
   }
 };
 
-/**
- * Get single manual payment subscription (Admin)
- * @param {number|string} subscriptionId - The subscription ID
- * @returns {Promise<Object>} Response with subscription details
- */
 export const getManualPaymentById = async (subscriptionId) => {
   try {
     return await httpClient.get(`/panel/manual-payments/view/${subscriptionId}`);
@@ -67,13 +38,6 @@ export const getManualPaymentById = async (subscriptionId) => {
   }
 };
 
-/**
- * Verify or reject manual payment (Admin)
- * @param {number|string} subscriptionId - The subscription ID
- * @param {boolean} approved - true to approve, false to reject
- * @param {string} notes - Verification notes (optional)
- * @returns {Promise<Object>} Response
- */
 export const verifyManualPayment = async (subscriptionId, approved, notes = "") => {
   try {
     return await httpClient.post(`/panel/manual-payments/verify/${subscriptionId}`, {
@@ -86,11 +50,6 @@ export const verifyManualPayment = async (subscriptionId, approved, notes = "") 
   }
 };
 
-/**
- * Upload QR code (Admin)
- * @param {FormData} formData - Form data with qrCode file and caption (UPI ID)
- * @returns {Promise<Object>} Response
- */
 export const uploadQRCode = async (formData) => {
   try {
     return await httpClient.upload("/panel/manual-payments/qr-code", formData);
@@ -100,10 +59,6 @@ export const uploadQRCode = async (formData) => {
   }
 };
 
-/**
- * Get QR code (Public)
- * @returns {Promise<Object>} Response with QR code data
- */
 export const getQRCode = async () => {
   try {
     return await httpClient.get("/public/manual-payments/qr-code");
@@ -114,10 +69,8 @@ export const getQRCode = async () => {
 };
 
 const manualPaymentService = {
-  // End User
   createManualPayment,
   getQRCode,
-  // Admin
   getManualPayments,
   getManualPaymentById,
   verifyManualPayment,
