@@ -3,7 +3,7 @@ import { useState, useEffect } from "react"
 import { Heart } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
-import { getHomepageListings } from "@/app/services/api/publicListingsService"
+import publicListingsService from "@/app/services/api/publicListingsService"
 import { getPostedByTypeBadge } from "@/lib/utils"
 import { useAuth } from "@/app/context/AuthContext"
 import Tooltip from "@/components/ui/tooltip"
@@ -28,7 +28,7 @@ export default function CarListings() {
     setError(null)
     try {
       const limit = showAll ? 100 : 8
-      const result = await getHomepageListings(1, limit)
+      const result = await publicListingsService.getHomepageListings(1, limit)
       
       if (result.success) {
         setListings(result.data || [])

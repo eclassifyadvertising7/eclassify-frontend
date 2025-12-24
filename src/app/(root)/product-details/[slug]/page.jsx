@@ -5,7 +5,7 @@ import { Heart, Phone, MessageCircle, Star, Eye, Fuel, Users, Palette, Settings,
 import Header from "@/components/Header"
 import FooterSection from "@/components/Footer"
 import Tooltip from "@/components/ui/tooltip"
-import { getListingBySlug, incrementListingView } from "@/app/services/api/publicListingsService"
+import publicListingsService from "@/app/services/api/publicListingsService"
 import { createOrGetChatRoom } from "@/app/services/api/chatService"
 import { favoritesService } from "@/app/services"
 import { toast } from "sonner"
@@ -38,7 +38,7 @@ export default function ProductDetails() {
     setLoading(true)
     setError(null)
     try {
-      const result = await getListingBySlug(slug)
+      const result = await publicListingsService.getListingBySlug(slug)
       
       if (result.success) {
         setListing(result.data)
@@ -60,7 +60,7 @@ export default function ProductDetails() {
         
         // Increment view count only if not viewed in last hour
         if (canIncrementView(result.data.id)) {
-          await incrementListingView(result.data.id)
+          await publicListingsService.incrementListingView(result.data.id)
           recordView(result.data.id)
         }
         
@@ -173,7 +173,7 @@ export default function ProductDetails() {
 
     // Increment view count when user clicks call button
     if (listing && canIncrementView(listing.id)) {
-      await incrementListingView(listing.id)
+      await publicListingsService.incrementListingView(listing.id)
       recordView(listing.id)
     }
     

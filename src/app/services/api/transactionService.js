@@ -1,15 +1,5 @@
 import httpClient from "@/app/services/httpClient";
 
-/**
- * Transaction Service
- * Handles all transaction related API calls for end users
- */
-
-/**
- * Get all user transactions
- * @param {Object} filters - Optional filters (status, transactionType, startDate, endDate, page, limit)
- * @returns {Promise<Object>} Response with transactions and pagination
- */
 export const getMyTransactions = async (filters = {}) => {
   try {
     const params = new URLSearchParams();
@@ -28,11 +18,6 @@ export const getMyTransactions = async (filters = {}) => {
   }
 };
 
-/**
- * Get transaction by ID
- * @param {number|string} transactionId - The transaction ID
- * @returns {Promise<Object>} Response with transaction details
- */
 export const getTransactionById = async (transactionId) => {
   try {
     return await httpClient.get(`/end-user/transactions/${transactionId}`);
