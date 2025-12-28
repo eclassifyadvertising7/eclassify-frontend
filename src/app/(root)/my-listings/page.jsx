@@ -10,6 +10,7 @@ import { listingService } from "@/app/services"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import ConfirmModal from "@/components/ui/confirm-modal"
 import { 
   Loader2, 
   Search, 
@@ -37,6 +38,14 @@ export default function MyListingsPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const [pagination, setPagination] = useState(null)
+  
+  // Modal states
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    type: null, // 'delete' or 'sold'
+    listingId: null,
+    listingTitle: ""
+  })
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -95,31 +104,61 @@ export default function MyListingsPage() {
     fetchListings()
   }
 
-  const handleDelete = async (listingId) => {
-    if (!confirm("Are you sure you want to delete this listing?")) return
-
-    try {
-      await listingService.deleteListing(listingId)
-      toast.success("Listing deleted successfully")
-      fetchListings()
-      fetchStats()
-    } catch (error) {
-      console.error("Error deleting listing:", error)
-      toast.error("Failed to delete listing")
-    }
+  const openDeleteModal = (listingId, listingTitle) => {
+    setConfirmModal({
+      isOpen: true,
+      type: 'delete',
+      listingId,
+      listingTitle
+    })
   }
 
-  const handleMarkAsSold = async (listingId) => {
-    if (!confirm("Mark this listing as sold?")) return
+  const openSoldModal = (listingId, listingTitle) => {
+    setConfirmModal({
+      isOpen: true,
+      type: 'sold',
+      listingId,
+      listingTitle
+    })
+  }
 
+  const openSubmitModal = (listingId, listingTitle) => {
+    setConfirmModal({
+      isOpen: true,
+      type: 'submit',
+      listingId,
+      listingTitle
+    })
+  }
+
+  const closeModal = () => {
+    setConfirmModal({
+      isOpen: false,
+      type: null,
+      listingId: null,
+      listingTitle: ""
+    })
+  }
+
+  const handleConfirmAction = async () => {
+    const { type, listingId } = confirmModal
+    
     try {
-      await listingService.markAsSold(listingId)
-      toast.success("Listing marked as sold")
+      if (type === 'delete') {
+        await listingService.deleteListing(listingId)
+        toast.success("Listing deleted successfully")
+      } else if (type === 'sold') {
+        await listingService.markAsSold(listingId)
+        toast.success("Listing marked as sold")
+      } else if (type === 'submit') {
+        await listingService.submitForApproval(listingId)
+        toast.success("Listing submitted for approval")
+      }
       fetchListings()
       fetchStats()
     } catch (error) {
-      console.error("Error marking as sold:", error)
-      toast.error("Failed to mark as sold")
+      console.error(`Error ${type === 'delete' ? 'deleting' : type === 'sold' ? 'marking as sold' : 'submitting'} listing:`, error)
+      toast.error(`Failed to ${type === 'delete' ? 'delete' : type === 'sold' ? 'mark as sold' : 'submit'} listing`)
     }
   }
 
@@ -279,40 +318,63 @@ export default function MyListingsPage() {
           ) : (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {listings.map((listing) => (
-                  <Card key={listing.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                    {/* Image */}
-                    <div className="relative h-48 bg-gray-200">
-                      {listing.media && listing.media.length > 0 ? (
-                        <img
-                          src={listing.media[0].thumbnailUrl || listing.media[0].mediaUrl}
-                          alt={listing.title}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-400">
-                          No Image
+                {listings.map((listing) => {
+                  const isInactive = listing.status === 'sold' || listing.status === 'expired'
+                  
+                  return (
+                    <Card 
+                      key={listing.id} 
+                      className={`overflow-hidden hover:shadow-lg transition-shadow ${
+                        isInactive ? 'opacity-60' : ''
+                      }`}
+                    >
+                      {/* Image */}
+                      <div className="relative h-48 bg-gray-200">
+                        {listing.media && listing.media.length > 0 ? (
+                          <img
+                            src={listing.media[0].thumbnailUrl || listing.media[0].mediaUrl}
+                            alt={listing.title}
+                            className={`w-full h-full object-cover ${
+                              isInactive ? 'grayscale' : ''
+                            }`}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-400">
+                            No Image
+                          </div>
+                        )}
+                        <div className="absolute top-2 right-2">
+                          {getStatusBadge(listing.status)}
                         </div>
-                      )}
-                      <div className="absolute top-2 right-2">
-                        {getStatusBadge(listing.status)}
+                        {listing.isFeatured && !isInactive && (
+                          <div className="absolute top-2 left-2">
+                            <Badge className="bg-yellow-500 text-white">Featured</Badge>
+                          </div>
+                        )}
+                        {isInactive && (
+                          <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center">
+                            <span className="text-white font-semibold text-lg uppercase tracking-wide">
+                              {listing.status}
+                            </span>
+                          </div>
+                        )}
                       </div>
-                      {listing.isFeatured && (
-                        <div className="absolute top-2 left-2">
-                          <Badge className="bg-yellow-500 text-white">Featured</Badge>
-                        </div>
-                      )}
-                    </div>
 
-                    {/* Content */}
-                    <CardContent className="p-4">
-                      <h3 className="font-semibold text-lg text-gray-900 mb-2 line-clamp-2">
+                      {/* Content */}
+                      <CardContent className="p-4">
+                      <h3 className={`font-semibold text-lg mb-2 line-clamp-2 ${
+                        isInactive ? 'text-gray-500' : 'text-gray-900'
+                      }`}>
                         {listing.title}
                       </h3>
-                      <p className="text-2xl font-bold text-primary mb-2">
+                      <p className={`text-2xl font-bold mb-2 ${
+                        isInactive ? 'text-gray-500' : 'text-primary'
+                      }`}>
                         {formatPrice(listing.price)}
                       </p>
-                      <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
+                      <div className={`flex items-center gap-4 text-sm mb-2 ${
+                        isInactive ? 'text-gray-400' : 'text-gray-600'
+                      }`}>
                         <div className="flex items-center gap-1">
                           <Eye className="h-4 w-4" />
                           {listing.viewCount} views
@@ -330,27 +392,38 @@ export default function MyListingsPage() {
                       )}
 
                       {/* Actions */}
-                      <div className="flex gap-2">
-                        <Link href={`/product-details/${listing.slug}`} className="flex-1">
+                      <div className="flex gap-2 flex-wrap">
+                        <Link href={`/my-listings/${listing.id}`} className="flex-1 min-w-[80px]">
                           <Button variant="outline" className="w-full" size="sm">
                             <Eye className="h-4 w-4 mr-1" />
                             View
                           </Button>
                         </Link>
                         {(listing.status === "draft" || listing.status === "rejected") && (
-                          <Link href={`/post?edit=${listing.id}`} className="flex-1">
+                          <Link href={`/edit-listing/${listing.id}`} className="flex-1 min-w-[80px]">
                             <Button variant="outline" className="w-full" size="sm">
                               <Edit className="h-4 w-4 mr-1" />
                               Edit
                             </Button>
                           </Link>
                         )}
+                        {listing.status === "draft" && listing.media && listing.media.length > 0 && (
+                          <Button 
+                            variant="default" 
+                            className="flex-1 min-w-[80px] bg-green-600 hover:bg-green-700" 
+                            size="sm"
+                            onClick={() => openSubmitModal(listing.id, listing.title)}
+                          >
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Submit
+                          </Button>
+                        )}
                         {listing.status === "active" && (
                           <Button 
                             variant="outline" 
-                            className="flex-1" 
+                            className="flex-1 min-w-[80px]" 
                             size="sm"
-                            onClick={() => handleMarkAsSold(listing.id)}
+                            onClick={() => openSoldModal(listing.id, listing.title)}
                           >
                             <CheckCircle className="h-4 w-4 mr-1" />
                             Sold
@@ -360,14 +433,15 @@ export default function MyListingsPage() {
                           variant="outline" 
                           className="text-red-600 hover:text-red-700 hover:bg-red-50" 
                           size="sm"
-                          onClick={() => handleDelete(listing.id)}
+                          onClick={() => openDeleteModal(listing.id, listing.title)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </CardContent>
                   </Card>
-                ))}
+                  )
+                })}
               </div>
 
               {/* Pagination */}
@@ -397,6 +471,36 @@ export default function MyListingsPage() {
         </div>
       </div>
       <Footer />
+      
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={closeModal}
+        onConfirm={handleConfirmAction}
+        title={
+          confirmModal.type === 'delete' 
+            ? 'Delete Listing' 
+            : confirmModal.type === 'sold'
+            ? 'Mark as Sold'
+            : 'Submit for Approval'
+        }
+        message={
+          confirmModal.type === 'delete'
+            ? `Are you sure you want to delete "${confirmModal.listingTitle}"? This action cannot be undone.`
+            : confirmModal.type === 'sold'
+            ? `Mark "${confirmModal.listingTitle}" as sold? This will change the listing status.`
+            : `Submit "${confirmModal.listingTitle}" for admin approval? Once approved, it will be visible to all users.`
+        }
+        confirmText={
+          confirmModal.type === 'delete' 
+            ? 'Delete' 
+            : confirmModal.type === 'sold'
+            ? 'Mark as Sold'
+            : 'Submit'
+        }
+        cancelText="Cancel"
+        variant={confirmModal.type === 'delete' ? 'danger' : 'primary'}
+      />
     </>
   )
 }

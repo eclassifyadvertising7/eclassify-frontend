@@ -12,6 +12,19 @@ export default function CategoryFilter({ selectedCategory, onCategoryChange }) {
   const fetchCategories = async () => {
     try {
       const response = await fetch('/api/public/categories')
+      
+      // Check if response is ok and is JSON
+      if (!response.ok) {
+        console.error('Failed to fetch categories:', response.status)
+        return
+      }
+      
+      const contentType = response.headers.get('content-type')
+      if (!contentType || !contentType.includes('application/json')) {
+        console.error('Categories API returned non-JSON response')
+        return
+      }
+      
       const result = await response.json()
       
       if (result.success) {

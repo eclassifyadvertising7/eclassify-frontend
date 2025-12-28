@@ -29,7 +29,7 @@ class HttpClient {
           config.headers['Authorization'] = `Bearer ${token}`;
         }
       } catch (error) {
-        console.error('Error accessing token:', error);
+        // Silent error handling for token access
       }
     }
 
@@ -115,7 +115,6 @@ class HttpClient {
 
       return false;
     } catch (error) {
-      console.error('Token refresh failed:', error);
       return false;
     }
   }

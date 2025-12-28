@@ -35,21 +35,25 @@ export default function LocationPermissionModal({
   };
 
   // Handle location received
-  if (location && step === 'loading') {
-    setStep('success');
-    onLocationReceived?.(location);
-    
-    // Auto close after success
-    setTimeout(() => {
-      onClose();
-      setStep('request');
-    }, 2000);
-  }
+  useEffect(() => {
+    if (location && step === 'loading') {
+      setStep('success');
+      onLocationReceived?.(location);
+      
+      // Auto close after success
+      setTimeout(() => {
+        onClose();
+        setStep('request');
+      }, 2000);
+    }
+  }, [location, step, onLocationReceived, onClose]);
 
   // Handle error
-  if (error && step === 'loading') {
-    setStep('error');
-  }
+  useEffect(() => {
+    if (error && step === 'loading') {
+      setStep('error');
+    }
+  }, [error, step]);
 
   const handleRetry = () => {
     setStep('request');

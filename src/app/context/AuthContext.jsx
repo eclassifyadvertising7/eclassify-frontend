@@ -85,6 +85,8 @@ export const AuthProvider = ({ children }) => {
       console.error("Logout error:", error)
     }
     
+    // Socket will be disconnected automatically by SocketContext watching isAuthenticated
+    
     // Use replace to avoid back button issues
     router.replace("/sign-in")
   }

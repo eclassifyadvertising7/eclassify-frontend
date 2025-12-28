@@ -1,38 +1,40 @@
 "use client"
 import { useState, useEffect } from "react"
-import { Heart } from "lucide-react"
+import { Heart, ChevronRight } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import publicListingsService from "@/app/services/api/publicListingsService"
+import activityService from "@/app/services/api/activityService"
 import { getPostedByTypeBadge } from "@/lib/utils"
 import { useAuth } from "@/app/context/AuthContext"
-import Tooltip from "@/components/ui/tooltip"
 import favoritesService from "@/app/services/api/favoritesService"
 import { toast } from "sonner"
 
 export default function CarListings() {
-  const [listings, setListings] = useState([])
+  const [featuredListings, setFeaturedListings] = useState([])
+  const [categoryListings, setCategoryListings] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [showAll, setShowAll] = useState(false)
   const [favorites, setFavorites] = useState(new Set())
-  const [pagination, setPagination] = useState(null)
   const { isAuthenticated } = useAuth()
 
   useEffect(() => {
     fetchListings()
-  }, [showAll])
+  }, [])
 
   const fetchListings = async () => {
     setLoading(true)
     setError(null)
     try {
-      const limit = showAll ? 100 : 8
-      const result = await publicListingsService.getHomepageListings(1, limit)
+      // Fetch homepage listings with categories 1 (Cars) and 2 (Properties)
+      const result = await publicListingsService.getHomepageListings(1, 10, {
+        categories: '1,2',
+        featuredLimit: 10
+      })
       
       if (result.success) {
-        setListings(result.data || [])
-        setPagination(result.pagination)
+        setFeaturedListings(result.data.featured || [])
+        setCategoryListings(result.data.byCategory || {})
       } else {
         setError(result.message || "Failed to fetch listings")
       }
@@ -93,7 +95,7 @@ export default function CarListings() {
     return parts.join(", ") || "Location not specified"
   }
 
-  const toggleFavorite = async (e, listingId) => {
+  const toggleFavorite = async (e, listingId, section) => {
     e.preventDefault()
     e.stopPropagation()
     
@@ -103,8 +105,14 @@ export default function CarListings() {
     }
     
     try {
-      // Check current favorite status from listing data or local state
-      const isCurrentlyFavorited = listings.find(l => l.id === listingId)?.isFavorited || favorites.has(listingId)
+      // Find listing in appropriate section
+      let isCurrentlyFavorited = false
+      if (section === 'featured') {
+        isCurrentlyFavorited = featuredListings.find(l => l.id === listingId)?.isFavorited || favorites.has(listingId)
+      } else {
+        const categoryData = categoryListings[section]
+        isCurrentlyFavorited = categoryData?.listings.find(l => l.id === listingId)?.isFavorited || favorites.has(listingId)
+      }
       
       if (isCurrentlyFavorited) {
         // Remove from favorites
@@ -116,17 +124,27 @@ export default function CarListings() {
         setFavorites(newFavorites)
         
         // Update listings data
-        setListings(prevListings => 
-          prevListings.map(listing => 
-            listing.id === listingId 
-              ? { 
-                  ...listing, 
-                  isFavorited: false,
-                  favoriteCount: Math.max((listing.favoriteCount || 0) - 1, 0)
-                }
-              : listing
+        if (section === 'featured') {
+          setFeaturedListings(prev => 
+            prev.map(listing => 
+              listing.id === listingId 
+                ? { ...listing, isFavorited: false, favoriteCount: Math.max((listing.favoriteCount || 0) - 1, 0) }
+                : listing
+            )
           )
-        )
+        } else {
+          setCategoryListings(prev => ({
+            ...prev,
+            [section]: {
+              ...prev[section],
+              listings: prev[section].listings.map(listing =>
+                listing.id === listingId
+                  ? { ...listing, isFavorited: false, favoriteCount: Math.max((listing.favoriteCount || 0) - 1, 0) }
+                  : listing
+              )
+            }
+          }))
+        }
         
         toast.success('Removed from favorites')
       } else {
@@ -139,17 +157,27 @@ export default function CarListings() {
         setFavorites(newFavorites)
         
         // Update listings data
-        setListings(prevListings => 
-          prevListings.map(listing => 
-            listing.id === listingId 
-              ? { 
-                  ...listing, 
-                  isFavorited: true,
-                  favoriteCount: (listing.favoriteCount || 0) + 1
-                }
-              : listing
+        if (section === 'featured') {
+          setFeaturedListings(prev => 
+            prev.map(listing => 
+              listing.id === listingId 
+                ? { ...listing, isFavorited: true, favoriteCount: (listing.favoriteCount || 0) + 1 }
+                : listing
+            )
           )
-        )
+        } else {
+          setCategoryListings(prev => ({
+            ...prev,
+            [section]: {
+              ...prev[section],
+              listings: prev[section].listings.map(listing =>
+                listing.id === listingId
+                  ? { ...listing, isFavorited: true, favoriteCount: (listing.favoriteCount || 0) + 1 }
+                  : listing
+              )
+            }
+          }))
+        }
         
         toast.success('Added to favorites')
       }
@@ -159,28 +187,110 @@ export default function CarListings() {
     }
   }
 
+  const renderListingCard = (listing, section) => {
+    const handleCardClick = async (e) => {
+      // Log listing view activity when card is clicked
+      const referrerSource = section === 'featured' ? 'featured' : 'category_page'
+      await activityService.logListingView(listing.id, {
+        referrer_source: referrerSource,
+        page_url: window.location.href
+      })
+    }
+
+    return (
+      <Link 
+        href={`/product-details/${listing.slug}`}
+        key={listing.id}
+        onClick={handleCardClick}
+        className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden"
+      >
+      <div className="relative h-32 md:h-48">
+        <Image 
+          src={getImageUrl(listing)} 
+          alt={listing.title} 
+          fill
+          className="object-cover" 
+          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+          unoptimized
+        />
+        {listing.isFeatured && (
+          <div className="absolute top-3 left-3 bg-cyan-500 text-white px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1">
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+            </svg>
+            Featured
+          </div>
+        )}
+        <button
+          onClick={(e) => toggleFavorite(e, listing.id, section)}
+          className={`absolute top-3 right-3 bg-white rounded-full p-2 shadow-md hover:shadow-lg transition-shadow duration-200 border border-gray-200 ${
+            !isAuthenticated ? 'cursor-not-allowed opacity-75' : 'hover:border-red-300'
+          }`}
+          disabled={!isAuthenticated}
+          title={!isAuthenticated ? "Please sign in to add favorites" : "Add to favorites"}
+        >
+          <Heart
+            className={`w-5 h-5 ${
+              isAuthenticated && (listing.isFavorited || favorites.has(listing.id))
+                ? "fill-red-500 text-red-500" 
+                : isAuthenticated 
+                  ? "text-gray-600 hover:text-red-500" 
+                  : "text-gray-400"
+            } transition-colors duration-200`}
+          />
+        </button>
+      </div>
+
+      <div className="p-4">
+        <div className="flex justify-between items-start mb-2">
+          <h3 className="text-sm md:text-xl font-bold text-gray-900">
+            {formatPrice(listing.price)}
+          </h3>
+          <span className="text-sm text-gray-500">
+            {formatTimeAgo(listing.publishedAt || listing.published_at || listing.createdAt || listing.created_at)}
+          </span>
+        </div>
+        <h4 className="text-sm md:text-lg font-semibold text-gray-800 mb-1">
+          {listing.title}
+        </h4>
+        <p className="text-sm text-gray-600 mb-2">{getLocation(listing)}</p>
+        {listing.postedByType && (
+          <span className={`inline-block text-xs px-2 py-1 rounded-full ${getPostedByTypeBadge(listing.postedByType).className}`}>
+            {getPostedByTypeBadge(listing.postedByType).icon} {getPostedByTypeBadge(listing.postedByType).label}
+          </span>
+        )}
+      </div>
+    </Link>
+  )
+}
+
   if (loading) {
     return (
       <section className="container mx-auto px-4 py-8 max-w-7xl mb-10">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">Latest Listings</h2>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {[...Array(8)].map((_, index) => (
-            <div key={index} className="bg-white rounded-lg shadow-md overflow-hidden animate-pulse">
-              <div className="h-32 md:h-48 bg-gray-200"></div>
-              <div className="p-4">
-                <div className="flex justify-between items-start mb-2">
-                  <div className="h-6 bg-gray-200 rounded w-20"></div>
-                  <div className="h-4 bg-gray-200 rounded w-12"></div>
-                </div>
-                <div className="h-5 bg-gray-200 rounded w-3/4 mb-1"></div>
-                <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
-                <div className="h-6 bg-gray-200 rounded w-16"></div>
-              </div>
+        {[...Array(3)].map((_, sectionIndex) => (
+          <div key={sectionIndex} className="mb-12">
+            <div className="flex justify-between items-center mb-6">
+              <div className="h-8 bg-gray-200 rounded w-48 animate-pulse"></div>
+              <div className="h-6 bg-gray-200 rounded w-24 animate-pulse"></div>
             </div>
-          ))}
-        </div>
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {[...Array(4)].map((_, index) => (
+                <div key={index} className="bg-white rounded-lg shadow-md overflow-hidden animate-pulse">
+                  <div className="h-32 md:h-48 bg-gray-200"></div>
+                  <div className="p-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="h-6 bg-gray-200 rounded w-20"></div>
+                      <div className="h-4 bg-gray-200 rounded w-12"></div>
+                    </div>
+                    <div className="h-5 bg-gray-200 rounded w-3/4 mb-1"></div>
+                    <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
+                    <div className="h-6 bg-gray-200 rounded w-16"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </section>
     )
   }
@@ -214,92 +324,66 @@ export default function CarListings() {
     )
   }
 
+  const hasAnyListings = featuredListings.length > 0 || Object.keys(categoryListings).length > 0
+
   return (
     <section className="container mx-auto px-4 py-8 max-w-7xl mb-10">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Latest Listings</h2>
-        {pagination && pagination.total > 8 && (
-          <button
-            onClick={() => setShowAll(!showAll)}
-            className="text-cyan-600 hover:text-cyan-700 font-medium transition-colors duration-200"
-          >
-            {showAll ? "Show Less" : "View All"}
-          </button>
-        )}
-      </div>
-
-      {listings.length === 0 ? (
+      {!hasAnyListings ? (
         <div className="text-center py-12 text-gray-500">
           No listings available at the moment.
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {listings.map((listing) => (
-            <Link 
-              href={`/product-details/${listing.slug}`}
-              key={listing.id}
-              className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden"
-            >
-              <div className="relative h-32 md:h-48">
-                <Image 
-                  src={getImageUrl(listing)} 
-                  alt={listing.title} 
-                  fill
-                  className="object-cover" 
-                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                  unoptimized
-
-                />
-                {listing.isFeatured && (
-                  <div className="absolute top-3 left-3 bg-cyan-500 text-white px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1">
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                    Featured
-                  </div>
-                )}
-                <button
-                  onClick={(e) => toggleFavorite(e, listing.id)}
-                  className={`absolute top-3 right-3 bg-white rounded-full p-2 shadow-md hover:shadow-lg transition-shadow duration-200 border border-gray-200 ${
-                    !isAuthenticated ? 'cursor-not-allowed opacity-75' : 'hover:border-red-300'
-                  }`}
-                  disabled={!isAuthenticated}
-                  title={!isAuthenticated ? "Please sign in to add favorites" : "Add to favorites"}
+        <>
+          {/* Featured Listings Section */}
+          {featuredListings.length > 0 && (
+            <div className="mb-12">
+              <div className="mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">Featured Listings</h2>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-4">
+                {featuredListings.map((listing) => renderListingCard(listing, 'featured'))}
+              </div>
+              <div className="text-right">
+                <Link 
+                  href="/browse?featured=true"
+                  className="text-cyan-600 hover:text-cyan-700 font-medium transition-colors duration-200 inline-flex items-center gap-1"
                 >
-                  <Heart
-                    className={`w-5 h-5 ${
-                      isAuthenticated && (listing.isFavorited || favorites.has(listing.id))
-                        ? "fill-red-500 text-red-500" 
-                        : isAuthenticated 
-                          ? "text-gray-600 hover:text-red-500" 
-                          : "text-gray-400"
-                    } transition-colors duration-200`}
-                  />
-                </button>
+                  See more
+                  <ChevronRight className="w-4 h-4" />
+                </Link>
               </div>
+            </div>
+          )}
 
-              <div className="p-4">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-sm md:text-xl font-bold text-gray-900">
-                    {formatPrice(listing.price)}
-                  </h3>
-                  <span className="text-sm text-gray-500">
-                    {formatTimeAgo(listing.publishedAt || listing.published_at || listing.createdAt || listing.created_at)}
-                  </span>
-                </div>
-                <h4 className="text-sm md:text-lg font-semibold text-gray-800 mb-1">
-                  {listing.title}
-                </h4>
-                <p className="text-sm text-gray-600 mb-2">{getLocation(listing)}</p>
-                {listing.postedByType && (
-                  <span className={`inline-block text-xs px-2 py-1 rounded-full ${getPostedByTypeBadge(listing.postedByType).className}`}>
-                    {getPostedByTypeBadge(listing.postedByType).icon} {getPostedByTypeBadge(listing.postedByType).label}
-                  </span>
-                )}
+          {/* Category-based Listings Sections */}
+          {Object.entries(categoryListings).map(([categoryId, categoryData]) => (
+            <div key={categoryId} className="mb-12">
+              <div className="mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">{categoryData.categoryName}</h2>
               </div>
-            </Link>
+              {categoryData.listings && categoryData.listings.length > 0 ? (
+                <>
+                  <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-4">
+                    {categoryData.listings.map((listing) => renderListingCard(listing, categoryId))}
+                  </div>
+                  <div className="text-right">
+                    <Link 
+                      href={`/browse?category=${categoryData.categorySlug}`}
+                      className="text-cyan-600 hover:text-cyan-700 font-medium transition-colors duration-200 inline-flex items-center gap-1"
+                    >
+                      See more
+                      <ChevronRight className="w-4 h-4" />
+                    </Link>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  No {categoryData.categoryName.toLowerCase()} available at the moment.
+                </div>
+              )}
+            </div>
           ))}
-        </div>
+        </>
       )}
     </section>
   )

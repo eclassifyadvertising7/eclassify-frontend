@@ -1,5 +1,5 @@
 "use client"
-import { BarChart3, Users, BookOpen, Calendar, Settings, Home, Award, X, FolderTree, Car, FileText, CreditCard } from "lucide-react"
+import { BarChart3, Users, BookOpen, Calendar, Settings, Home, Award, X, FolderTree, Car, FileText, CreditCard, MapPin, Bell } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
@@ -11,11 +11,13 @@ export default function AdminSidebar({ sidebarOpen, setSidebarOpen }) {
     { id: "ads", name: "Ads", icon: BookOpen, href: "/admin/ads" },
     { id: "users", name: "Users", icon: Users, href: "/admin/users" },
     { id: "categories", name: "Categories", icon: FolderTree, href: "/admin/categories" },
+    { id: "locations", name: "Locations", icon: MapPin, href: "/admin/locations" },
+    { id: "notifications", name: "Notifications", icon: Bell, href: "/admin/notifications" },
     { id: "subscription-plans", name: "Subscription Plans", icon: Award, href: "/admin/subscriptions" },
     { id: "user-subscriptions", name: "User Subscriptions", icon: Users, href: "/admin/user-subscriptions" },
     { id: "manual-payments", name: "Manual Payments", icon: CreditCard, href: "/admin/manual-payments" },
     { id: "payments", name: "Payments", icon: BarChart3, href: "/admin/payments" },
-    { id: "reports", name: "Reports", icon: Calendar, href: "/admin/reports" },
+    { id: "moderation", name: "Moderation", icon: Calendar, href: "/admin/reports" },
     { id: "settings", name: "Settings", icon: Settings, href: "/admin/settings" },
     { id: "car-data", name: "Car Data", icon: Car, href: "/admin/car-data" },
     { id: "data-requests", name: "Data Requests", icon: FileText, href: "/admin/data-requests" },
@@ -32,9 +34,9 @@ export default function AdminSidebar({ sidebarOpen, setSidebarOpen }) {
     <div
       className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform ${
         sidebarOpen ? "translate-x-0" : "-translate-x-full"
-      } transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}
+      } transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex flex-col`}
     >
-      <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
+      <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 flex-shrink-0">
         <div className="flex items-center space-x-2">
           <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
             <span className="text-white font-bold text-sm">eC</span>
@@ -49,7 +51,7 @@ export default function AdminSidebar({ sidebarOpen, setSidebarOpen }) {
         </button>
       </div>
 
-      <nav className="mt-6 px-3">
+      <nav className="mt-6 px-3 flex-1 overflow-y-auto">
         {sidebarItems.map((item) => (
           <Link
             key={item.id}
