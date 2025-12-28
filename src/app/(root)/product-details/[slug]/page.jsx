@@ -8,10 +8,12 @@ import Tooltip from "@/components/ui/tooltip"
 import publicListingsService from "@/app/services/api/publicListingsService"
 import { createOrGetChatRoom } from "@/app/services/api/chatService"
 import { favoritesService } from "@/app/services"
+import activityService from "@/app/services/api/activityService"
 import { toast } from "sonner"
 import { getPostedByTypeBadge } from "@/lib/utils"
 import { canIncrementView, recordView, cleanupOldViews } from "@/lib/viewTracking"
 import { useAuth } from "@/app/context/AuthContext"
+import RelatedListings from "@/components/RelatedListings"
 
 export default function ProductDetails() {
   const params = useParams()
@@ -25,14 +27,38 @@ export default function ProductDetails() {
   const [selectedImage, setSelectedImage] = useState(0)
   const [message, setMessage] = useState("")
   const [creatingChat, setCreatingChat] = useState(false)
+  const [viewStartTime, setViewStartTime] = useState(null)
+  const [activityLogId, setActivityLogId] = useState(null)
 
   useEffect(() => {
     if (slug) {
       fetchListingDetails()
       // Clean up old view records on page load
       cleanupOldViews()
+      // Record view start time
+      setViewStartTime(Date.now())
     }
   }, [slug])
+
+  // Track view duration on page unload
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (viewStartTime && listing?.id) {
+        const viewDuration = Math.round((Date.now() - viewStartTime) / 1000)
+        // Use sendBeacon for reliable logging on page unload
+        if (navigator.sendBeacon && activityLogId) {
+          const data = JSON.stringify({
+            activityLogId,
+            viewDuration
+          })
+          navigator.sendBeacon('/api/end-user/activity/update-view-duration', data)
+        }
+      }
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [viewStartTime, listing?.id, activityLogId])
 
   const fetchListingDetails = async () => {
     setLoading(true)
@@ -62,6 +88,21 @@ export default function ProductDetails() {
         if (canIncrementView(result.data.id)) {
           await publicListingsService.incrementListingView(result.data.id)
           recordView(result.data.id)
+        }
+        
+        // Log listing view activity
+        const referrerSource = document.referrer 
+          ? (document.referrer.includes(window.location.hostname) ? 'search_results' : 'external')
+          : 'direct_link'
+        
+        const activityResponse = await activityService.logListingView(result.data.id, {
+          referrer_source: referrerSource,
+          page_url: window.location.href,
+          scroll_depth: 0
+        })
+        
+        if (activityResponse.success && activityResponse.data?.activityLogId) {
+          setActivityLogId(activityResponse.data.activityLogId)
         }
         
         // Set default message
@@ -111,6 +152,13 @@ export default function ProductDetails() {
       const response = await createOrGetChatRoom(listing.id)
       
       if (response.success) {
+        // Log chat initiation activity
+        await activityService.logChatInitiation(listing.id, {
+          seller_id: listing.userId,
+          chat_room_id: response.data.roomId,
+          button_location: 'listing_header'
+        })
+        
         // Navigate to chats page with the room ID
         router.push(`/chats?room=${response.data.roomId}`)
       }
@@ -584,6 +632,9 @@ export default function ProductDetails() {
             </div>
           </div>
         </div>
+
+        {/* Related Listings */}
+        {listing?.id && <RelatedListings listingId={listing.id} limit={6} />}
       </div>
       <FooterSection />
     </>

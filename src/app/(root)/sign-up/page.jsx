@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Phone, User, Mail, Clock } from "lucide-react"
+import { Phone, User, Mail, Clock, Lock } from "lucide-react"
 import Link from "next/link"
 import Header from "@/components/Header"
 import Footer from "@/components/Footer"
@@ -34,6 +34,8 @@ export default function SignUpPage() {
   const [mobile, setMobile] = useState("")
   const [email, setEmail] = useState("")
   const [otp, setOtp] = useState("")
+  const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
   const [loading, setLoading] = useState(false)
   
   // Flow State
@@ -48,6 +50,8 @@ export default function SignUpPage() {
     setOtpVerified(false)
     setOtpSent(false)
     setOtp("")
+    setPassword("")
+    setConfirmPassword("")
     resetTimer()
     toast.info("You can now edit your details. Please verify again after making changes.")
   }
@@ -109,7 +113,8 @@ export default function SignUpPage() {
       
       if (response.success) {
         setOtpVerified(true)
-        toast.success("OTP verified successfully! Email is now restricted.")
+        setOtpSent(false)
+        toast.success("OTP verified successfully! Please set your password.")
       } else {
         toast.error(response.message || "Invalid OTP")
       }
@@ -127,6 +132,17 @@ export default function SignUpPage() {
       return
     }
 
+    // Validate password
+    if (!password || password.length < 6) {
+      toast.error("Password must be at least 6 characters long")
+      return
+    }
+
+    if (password !== confirmPassword) {
+      toast.error("Passwords do not match")
+      return
+    }
+
     setLoading(true)
     try {
       const response = await authService.otpSignup(
@@ -134,7 +150,8 @@ export default function SignUpPage() {
         email.trim(),
         fullName.trim(),
         '+91',
-        navigator.userAgent
+        navigator.userAgent,
+        password
       )
       
       if (response.success) {
@@ -372,20 +389,60 @@ export default function SignUpPage() {
                       </Button>
                     </div>
                     <p className="text-green-700 text-sm mt-1">
-                      Your credentials have been verified. Click "Edit Details" to modify them.
+                      Your credentials have been verified. Please set your password below.
                     </p>
                   </div>
                 )}
 
-                {/* Submit Button */}
+                {/* Password Fields - Show after OTP verification */}
                 {otpVerified && !otpSent && (
-                  <Button
-                    onClick={handleSubmit}
-                    className="w-full"
-                    disabled={loading}
-                  >
-                    {loading ? "Creating Account..." : "Submit"}
-                  </Button>
+                  <>
+                    {/* Password */}
+                    <div className="space-y-2">
+                      <Label htmlFor="password">Password</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <Input
+                          id="password"
+                          type="password"
+                          placeholder="Enter your password (min. 6 characters)"
+                          className="pl-10"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          disabled={loading}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Confirm Password */}
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmPassword">Confirm Password</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <Input
+                          id="confirmPassword"
+                          type="password"
+                          placeholder="Re-enter your password"
+                          className="pl-10"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          disabled={loading}
+                        />
+                      </div>
+                      {confirmPassword && password !== confirmPassword && (
+                        <p className="text-xs text-red-500">Passwords do not match</p>
+                      )}
+                    </div>
+
+                    {/* Submit Button */}
+                    <Button
+                      onClick={handleSubmit}
+                      className="w-full"
+                      disabled={loading || !password || !confirmPassword || password !== confirmPassword}
+                    >
+                      {loading ? "Creating Account..." : "Create Account"}
+                    </Button>
+                  </>
                 )}
               </div>
 

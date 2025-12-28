@@ -53,14 +53,14 @@ export function LocationProvider({ children }) {
     if (selectedLocation.type === 'current') {
       // For current location, we might not have state/city IDs
       return { 
-        stateId: selectedLocation.state || '', 
+        stateId: selectedLocation.stateId || '', 
         cityId: selectedLocation.id || '',
         coordinates: selectedLocation.coordinates
       }
     }
     
     return {
-      stateId: selectedLocation.state || '',
+      stateId: selectedLocation.stateId || '',
       cityId: selectedLocation.id || ''
     }
   }

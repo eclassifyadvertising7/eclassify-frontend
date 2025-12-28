@@ -5,7 +5,6 @@ import CategoryFilter from "./CategoryFilter"
 import CarFilters from "./CarFilters"
 import PropertyFilters from "./PropertyFilters"
 import PriceFilter from "./PriceFilter"
-import LocationFilter from "./LocationFilter"
 import SortFilter from "./SortFilter"
 
 export default function FilterPanel({ 
@@ -15,9 +14,31 @@ export default function FilterPanel({
   onClearFilters, 
   isOpen, 
   onClose,
-  categorySlug 
+  categorySlug,
+  hideCategoryFilter = false
 }) {
   const [activeCategory, setActiveCategory] = useState(null)
+
+  // Close on ESC key
+  useEffect(() => {
+    if (!isOpen) return
+    
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', handleEsc)
+    return () => window.removeEventListener('keydown', handleEsc)
+  }, [isOpen, onClose])
+
+  // Prevent body scroll when drawer is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden'
+      return () => {
+        document.body.style.overflow = 'unset'
+      }
+    }
+  }, [isOpen])
 
   useEffect(() => {
     // Set active category based on slug
@@ -38,15 +59,24 @@ export default function FilterPanel({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 lg:relative lg:bg-transparent lg:z-auto">
-      <div className="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-xl lg:relative lg:max-w-none lg:shadow-none lg:bg-gray-50 lg:rounded-lg lg:border lg:border-gray-200">
-        <div className="flex flex-col h-full lg:h-auto">
+    <div 
+      className="fixed inset-0 z-50"
+      style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+      onClick={onClose}
+    >
+      {/* Side Drawer */}
+      <div 
+        className="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-xl animate-slide-in-right"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-200 lg:border-none">
+          <div className="flex items-center justify-between p-4 border-b border-gray-200">
             <h3 className="text-lg font-semibold text-gray-900">Filters</h3>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-lg lg:hidden"
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              aria-label="Close filters"
             >
               <X className="w-5 h-5" />
             </button>
@@ -54,8 +84,8 @@ export default function FilterPanel({
 
           {/* Filter Content */}
           <div className="flex-1 overflow-y-auto p-4 space-y-6">
-            {/* Category Filter - Only show if not on category page */}
-            {!categorySlug && (
+            {/* Category Filter - Only show if not on category page and not explicitly hidden */}
+            {!categorySlug && !hideCategoryFilter && (
               <CategoryFilter
                 selectedCategory={filters.categoryId}
                 onCategoryChange={handleCategoryChange}
@@ -75,16 +105,6 @@ export default function FilterPanel({
               onPriceChange={(min, max) => {
                 onFilterChange('minPrice', min)
                 onFilterChange('maxPrice', max)
-              }}
-            />
-
-            {/* Location Filter */}
-            <LocationFilter
-              stateId={filters.stateId}
-              cityId={filters.cityId}
-              onLocationChange={(stateId, cityId) => {
-                onFilterChange('stateId', stateId)
-                onFilterChange('cityId', cityId)
               }}
             />
 

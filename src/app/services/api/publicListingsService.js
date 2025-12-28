@@ -1,11 +1,20 @@
 import httpClient from "@/app/services/httpClient";
 
-export const getHomepageListings = async (page = 1, limit = 20) => {
+export const getHomepageListings = async (page = 1, limit = 20, filters = {}) => {
   try {
     const params = new URLSearchParams({
       page: page.toString(),
       limit: limit.toString(),
     });
+    
+    // Add filter parameters
+    Object.keys(filters).forEach((key) => {
+      const value = filters[key];
+      if (value !== undefined && value !== null && value !== "" && key !== 'page' && key !== 'limit') {
+        params.append(key, value.toString());
+      }
+    });
+    
     return await httpClient.get(
       `/public/listings/homepage?${params.toString()}`
     );
@@ -75,12 +84,25 @@ export const incrementListingView = async (id) => {
   }
 };
 
+export const getRelatedListings = async (id, limit = 6) => {
+  try {
+    const params = new URLSearchParams({ limit: limit.toString() });
+    return await httpClient.get(
+      `/public/listings/related/${id}?${params.toString()}`
+    );
+  } catch (error) {
+    console.error("Error fetching related listings:", error);
+    throw error;
+  }
+};
+
 const publicListingsService = {
   getHomepageListings,
   browseCategoryListings,
   getFeaturedListings,
   getListingBySlug,
   incrementListingView,
+  getRelatedListings,
 };
 
 export default publicListingsService;

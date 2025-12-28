@@ -4,26 +4,59 @@
  */
 
 import { AlertTriangle, Shield, CreditCard, Phone, Flag, X } from "lucide-react";
+import { useEffect } from "react";
 
 export default function ChatSafetyDialog({ onAccept, onCancel }) {
+  // Close on ESC key
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') onCancel();
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [onCancel]);
+
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ 
+        backgroundColor: 'rgba(0, 0, 0, 0.85)',
+        animation: 'fadeIn 0.2s ease-out'
+      }}
+      onClick={onCancel}
+    >
+      {/* Close Button */}
+      <button
+        onClick={onCancel}
+        className="absolute top-4 right-4 p-3 rounded-full transition-all text-white z-10 hover:scale-110"
+        style={{ backgroundColor: 'rgba(255, 255, 255, 0.15)' }}
+        title="Close (ESC)"
+        aria-label="Close"
+      >
+        <X className="w-6 h-6" />
+      </button>
+
+      <div 
+        className="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+        style={{ animation: 'zoomIn 0.2s ease-out' }}
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
+        <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between z-10">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
               <Shield className="w-6 h-6 text-yellow-600" />
             </div>
             <h2 className="text-xl font-semibold text-gray-900">Chat Safety Guidelines</h2>
           </div>
-          <button
-            onClick={onCancel}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-            aria-label="Close"
-          >
-            <X className="w-5 h-5" />
-          </button>
         </div>
 
         {/* Content */}
@@ -194,6 +227,24 @@ export default function ChatSafetyDialog({ onAccept, onCancel }) {
           </button>
         </div>
       </div>
+
+      {/* CSS Animations */}
+      <style jsx>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes zoomIn {
+          from { 
+            opacity: 0;
+            transform: scale(0.95);
+          }
+          to { 
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+      `}</style>
     </div>
   );
 }

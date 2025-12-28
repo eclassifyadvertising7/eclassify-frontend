@@ -36,6 +36,18 @@ export default function CarFilters({ filters, onFilterChange }) {
   const fetchBrands = async () => {
     try {
       const response = await fetch('/api/public/car-brands')
+      
+      if (!response.ok) {
+        console.error('Failed to fetch brands:', response.status)
+        return
+      }
+      
+      const contentType = response.headers.get('content-type')
+      if (!contentType || !contentType.includes('application/json')) {
+        console.error('Car brands API returned non-JSON response')
+        return
+      }
+      
       const result = await response.json()
       
       if (result.success) {
@@ -52,6 +64,18 @@ export default function CarFilters({ filters, onFilterChange }) {
     setLoadingModels(true)
     try {
       const response = await fetch(`/api/public/car-models?brandId=${brandId}`)
+      
+      if (!response.ok) {
+        console.error('Failed to fetch models:', response.status)
+        return
+      }
+      
+      const contentType = response.headers.get('content-type')
+      if (!contentType || !contentType.includes('application/json')) {
+        console.error('Car models API returned non-JSON response')
+        return
+      }
+      
       const result = await response.json()
       
       if (result.success) {
@@ -68,6 +92,18 @@ export default function CarFilters({ filters, onFilterChange }) {
     setLoadingVariants(true)
     try {
       const response = await fetch(`/api/public/car-variants?modelId=${modelId}`)
+      
+      if (!response.ok) {
+        console.error('Failed to fetch variants:', response.status)
+        return
+      }
+      
+      const contentType = response.headers.get('content-type')
+      if (!contentType || !contentType.includes('application/json')) {
+        console.error('Car variants API returned non-JSON response')
+        return
+      }
+      
       const result = await response.json()
       
       if (result.success) {

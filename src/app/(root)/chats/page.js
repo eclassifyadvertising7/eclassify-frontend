@@ -74,6 +74,61 @@ function ChatsContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters, currentUserId]);
 
+  // Listen for socket events to update room list
+  useEffect(() => {
+    if (!currentUserId) return;
+
+    // Listen for new messages to update unread counts
+    const handleNewMessage = (data) => {
+      console.log('New message received in room list:', data);
+      setRooms(prevRooms => 
+        prevRooms.map(room => {
+          if (room.id === data.roomId) {
+            const isBuyer = currentUserId === room.buyerId;
+            return {
+              ...room,
+              lastMessageAt: data.message.createdAt,
+              // Increment unread count if message is not from current user and room is not selected
+              unreadCountBuyer: isBuyer && data.message.senderId !== currentUserId && selectedRoom?.id !== room.id
+                ? (room.unreadCountBuyer || 0) + 1
+                : room.unreadCountBuyer,
+              unreadCountSeller: !isBuyer && data.message.senderId !== currentUserId && selectedRoom?.id !== room.id
+                ? (room.unreadCountSeller || 0) + 1
+                : room.unreadCountSeller
+            };
+          }
+          return room;
+        })
+      );
+    };
+
+    // Listen for message read events to clear unread counts
+    const handleMessageRead = (data) => {
+      console.log('Messages marked as read:', data);
+      setRooms(prevRooms =>
+        prevRooms.map(room => {
+          if (room.id === data.roomId) {
+            const isBuyer = currentUserId === room.buyerId;
+            return {
+              ...room,
+              unreadCountBuyer: isBuyer ? 0 : room.unreadCountBuyer,
+              unreadCountSeller: !isBuyer ? 0 : room.unreadCountSeller
+            };
+          }
+          return room;
+        })
+      );
+    };
+
+    socketService.onNewMessage(handleNewMessage);
+    socketService.onMessageRead(handleMessageRead);
+
+    return () => {
+      socketService.offNewMessage(handleNewMessage);
+      socketService.offMessageRead(handleMessageRead);
+    };
+  }, [currentUserId, selectedRoom]);
+
   // Auto-select room from query parameter or first room
   useEffect(() => {
     if (rooms.length === 0) return;

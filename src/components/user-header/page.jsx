@@ -28,11 +28,15 @@ import {
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/app/context/AuthContext"
+import { useSocket } from "@/app/context/SocketContext"
 import { toast } from "sonner"
+import NotificationDrawer from "@/components/NotificationDrawer"
 
 const UserHeader = () => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
+  const [isNotificationDrawerOpen, setIsNotificationDrawerOpen] = useState(false)
   const { user, logout } = useAuth()
+  const { chatUnreadCount, notificationUnreadCount, isConnected } = useSocket()
 
   const handleLogout = async () => {
     try {
@@ -61,23 +65,36 @@ const UserHeader = () => {
             </DropdownMenu> */}
 
             {/* Favorites */}
-            <Button variant="ghost" className="relative">
-              <Heart className="h-10 w-10 " />
-            </Button>
+            <Link href="/favorites">
+              <Button variant="ghost" className="relative">
+                <Heart className="h-10 w-10 " />
+              </Button>
+            </Link>
 
             {/* Messages */}
             <Link href="/chats">
               <Button variant="ghost" className="relative">
                 <MessageCircle className="h-10 w-10" />
-                {/* <Badge className="absolute -top-1 text-[9px] right-1 h-4 w-4 rounded-full bg-blue-500 text-white  flex items-center justify-center p-0">
-                  3
-                </Badge> */}
+                {chatUnreadCount > 0 && (
+                  <Badge className="absolute -top-1 text-[9px] right-1 h-4 w-4 rounded-full bg-blue-500 text-white flex items-center justify-center p-0">
+                    {chatUnreadCount > 99 ? '99+' : chatUnreadCount}
+                  </Badge>
+                )}
               </Button>
             </Link>
 
             {/* Notifications */}
-            <Button variant="ghost" className="relative">
+            <Button 
+              variant="ghost" 
+              className="relative"
+              onClick={() => setIsNotificationDrawerOpen(true)}
+            >
               <Bell className="h-10 w-10" />
+              {notificationUnreadCount > 0 && (
+                <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white flex items-center justify-center p-0 text-[10px]">
+                  {notificationUnreadCount > 99 ? '99+' : notificationUnreadCount}
+                </Badge>
+              )}
             </Button>
 
             {/* User Menu */}
@@ -132,10 +149,12 @@ const UserHeader = () => {
 
                 {/* Menu Items */}
                 <div className="py-2">
-                  <DropdownMenuItem className="flex items-center gap-3 px-4 py-3">
-                    <Heart className="h-5 w-5" />
-                    <span>My Favourites</span>
-                  </DropdownMenuItem>
+                  <Link href="/favorites">
+                    <DropdownMenuItem className="flex items-center gap-3 px-4 py-3">
+                      <Heart className="h-5 w-5" />
+                      <span>My Favourites</span>
+                    </DropdownMenuItem>
+                  </Link>
 
                   <Link href="/my-listings">
                     <DropdownMenuItem className="flex items-center gap-3 px-4 py-3">
@@ -190,6 +209,12 @@ const UserHeader = () => {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+
+      {/* Notification Drawer */}
+      <NotificationDrawer 
+        isOpen={isNotificationDrawerOpen} 
+        onClose={() => setIsNotificationDrawerOpen(false)} 
+      />
     </div>
   )
 }

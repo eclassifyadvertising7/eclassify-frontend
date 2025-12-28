@@ -4,11 +4,11 @@ import { useState, useEffect, useRef } from 'react';
 import { MapPin, ChevronDown, Navigation, Search } from 'lucide-react';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { useLocation } from '@/app/context/LocationContext';
-import { getCities, getPopularCities, searchCitiesByLocation } from '@/app/services/api/locationService';
+import { getPopularCities, searchCities, searchCitiesByLocation } from '@/app/services/api/locationService';
 
 /**
  * Location selector dropdown component
- * Shows current location, popular cities, and all cities
+ * Shows current location, popular cities, and search results
  */
 export default function LocationSelector({ 
   onLocationSelect, 
@@ -18,11 +18,12 @@ export default function LocationSelector({
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [popularCities, setPopularCities] = useState([]);
-  const [allCities, setAllCities] = useState([]);
   const [filteredCities, setFilteredCities] = useState([]);
   const [loadingCities, setLoadingCities] = useState(false);
   const [loadingPopular, setLoadingPopular] = useState(false);
+  const [waitingForLocation, setWaitingForLocation] = useState(false);
   const dropdownRef = useRef(null);
+  const searchTimeoutRef = useRef(null);
   
   const { 
     location, 
@@ -38,19 +39,106 @@ export default function LocationSelector({
     loadPopularCities();
   }, []);
 
-  // Load cities based on search term
+  // Auto-handle location when it becomes available after user requested it
   useEffect(() => {
-    if (searchTerm.trim()) {
-      searchCities(searchTerm);
+    if (location && !geoLoading && waitingForLocation) {
+      console.log('Location became available after user request:', location);
+      setWaitingForLocation(false);
+      
+      // Process the location directly here to avoid infinite loop
+      const processLocation = async () => {
+        try {
+          console.log('Processing location with coordinates:', location);
+          
+          // Try to find nearby cities (optional - will gracefully fail if endpoint doesn't exist)
+          let locationData;
+          try {
+            const nearbyResult = await searchCitiesByLocation(location.latitude, location.longitude, 25);
+            
+            if (nearbyResult.success && nearbyResult.data.length > 0) {
+              const closestCity = nearbyResult.data[0];
+              console.log('Using closest city:', closestCity);
+              locationData = {
+                id: closestCity.id,
+                type: 'current',
+                name: closestCity.name,
+                state: closestCity.stateName,
+                district: closestCity.district,
+                coordinates: {
+                  latitude: location.latitude,
+                  longitude: location.longitude
+                }
+              };
+            } else {
+              throw new Error('No nearby cities found');
+            }
+          } catch (nearbyError) {
+            // If nearby cities API fails or doesn't exist, just use coordinates
+            console.log('Nearby cities not available, using coordinates only');
+            locationData = {
+              type: 'current',
+              name: 'Current Location',
+              coordinates: {
+                latitude: location.latitude,
+                longitude: location.longitude
+              }
+            };
+          }
+          
+          console.log('Setting location data:', locationData);
+          handleLocationSelect(locationData);
+        } catch (error) {
+          console.error('Error processing location:', error);
+          // Fallback to basic current location
+          const currentLocationData = {
+            type: 'current',
+            name: 'Current Location',
+            coordinates: {
+              latitude: location.latitude,
+              longitude: location.longitude
+            }
+          };
+          console.log('Using fallback location data:', currentLocationData);
+          handleLocationSelect(currentLocationData);
+        }
+      };
+      
+      processLocation();
+    }
+  }, [location, geoLoading, waitingForLocation]);
+
+  // Load cities based on search term (minimum 3 characters) with debounce
+  useEffect(() => {
+    // Clear previous timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    if (searchTerm.trim() && searchTerm.trim().length >= 3) {
+      // Set loading state immediately
+      setLoadingCities(true);
+      
+      // Debounce the search by 300ms
+      searchTimeoutRef.current = setTimeout(() => {
+        searchCitiesDebounced(searchTerm);
+      }, 300);
     } else {
       setFilteredCities([]);
+      setLoadingCities(false);
     }
+
+    // Cleanup timeout on unmount
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
   }, [searchTerm]);
 
   const loadPopularCities = async () => {
     setLoadingPopular(true);
     try {
-      const result = await getPopularCities(8);
+      const result = await getPopularCities();
       if (result.success) {
         const formattedCities = result.data.map(city => ({
           id: city.id,
@@ -71,19 +159,21 @@ export default function LocationSelector({
     }
   };
 
-  const searchCities = async (searchTerm) => {
+  const searchCitiesDebounced = async (query) => {
     setLoadingCities(true);
     try {
-      const result = await getCities(searchTerm, 50);
+      const result = await searchCities(query, null, 50);
       if (result.success) {
         const formattedCities = result.data.map(city => ({
           id: city.id,
           name: city.name,
           state: city.stateName,
+          stateId: city.stateId,
           district: city.district,
           pincode: city.pincode,
           latitude: city.latitude,
           longitude: city.longitude,
+          isPopular: city.isPopular,
           type: 'search'
         }));
         setFilteredCities(formattedCities);
@@ -118,28 +208,37 @@ export default function LocationSelector({
 
   // Handle current location request
   const handleCurrentLocation = async () => {
+    console.log('handleCurrentLocation called, current location:', location);
+    
     if (location) {
       try {
-        // Try to find nearby cities based on current location
-        const nearbyResult = await searchCitiesByLocation(location.latitude, location.longitude, 25);
+        console.log('Processing location with coordinates:', location);
         
+        // Try to find nearby cities (optional - will gracefully fail if endpoint doesn't exist)
         let locationData;
-        if (nearbyResult.success && nearbyResult.data.length > 0) {
-          // Use the closest city
-          const closestCity = nearbyResult.data[0];
-          locationData = {
-            id: closestCity.id,
-            type: 'current',
-            name: closestCity.name,
-            state: closestCity.stateName,
-            district: closestCity.district,
-            coordinates: {
-              latitude: location.latitude,
-              longitude: location.longitude
-            }
-          };
-        } else {
-          // Fallback to just coordinates
+        try {
+          const nearbyResult = await searchCitiesByLocation(location.latitude, location.longitude, 25);
+          
+          if (nearbyResult.success && nearbyResult.data.length > 0) {
+            const closestCity = nearbyResult.data[0];
+            console.log('Using closest city:', closestCity);
+            locationData = {
+              id: closestCity.id,
+              type: 'current',
+              name: closestCity.name,
+              state: closestCity.stateName,
+              district: closestCity.district,
+              coordinates: {
+                latitude: location.latitude,
+                longitude: location.longitude
+              }
+            };
+          } else {
+            throw new Error('No nearby cities found');
+          }
+        } catch (nearbyError) {
+          // If nearby cities API fails or doesn't exist, just use coordinates
+          console.log('Nearby cities not available, using coordinates only');
           locationData = {
             type: 'current',
             name: 'Current Location',
@@ -150,9 +249,10 @@ export default function LocationSelector({
           };
         }
         
+        console.log('Setting location data:', locationData);
         handleLocationSelect(locationData);
       } catch (error) {
-        console.error('Error getting nearby cities:', error);
+        console.error('Error processing location:', error);
         // Fallback to basic current location
         const currentLocationData = {
           type: 'current',
@@ -162,9 +262,12 @@ export default function LocationSelector({
             longitude: location.longitude
           }
         };
+        console.log('Using fallback location data:', currentLocationData);
         handleLocationSelect(currentLocationData);
       }
     } else {
+      console.log('No location available, requesting location and setting flag');
+      setWaitingForLocation(true);
       requestLocation();
     }
   };
@@ -199,12 +302,17 @@ export default function LocationSelector({
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search cities..."
+                placeholder="Search cities (min 3 characters)..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               />
             </div>
+            {searchTerm.length > 0 && searchTerm.length < 3 && (
+              <div className="text-xs text-gray-500 mt-1 ml-1">
+                Type at least 3 characters to search
+              </div>
+            )}
           </div>
 
           <div className="max-h-80 overflow-y-auto">

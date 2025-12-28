@@ -31,8 +31,8 @@ import {
   Zap
 } from "lucide-react"
 
-const propertyTypes = ["apartment", "house", "villa", "plot", "commercial", "office", "shop", "warehouse"]
-const listingTypes = ["sale", "rent", "pg", "hostel"]
+const propertyTypes = ["apartment", "house", "plot", "office", "shop", "warehouse", "pg", "hostel"]
+const listingTypes = ["sale", "rent"]
 const furnishingTypes = ["fully-furnished", "semi-furnished", "unfurnished"]
 const facingDirections = ["north", "south", "east", "west", "north-east", "north-west", "south-east", "south-west"]
 
@@ -117,7 +117,20 @@ export default function PropertyForm() {
 
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files)
-    setFormData((prev) => ({ ...prev, images: [...prev.images, ...files] }))
+    const remainingSlots = 6 - formData.images.length
+    
+    if (remainingSlots <= 0) {
+      toast.error("Maximum 6 images allowed")
+      return
+    }
+    
+    const filesToAdd = files.slice(0, remainingSlots)
+    
+    if (files.length > remainingSlots) {
+      toast.warning(`Only ${remainingSlots} more image${remainingSlots > 1 ? 's' : ''} can be added (max 6 total)`)
+    }
+    
+    setFormData((prev) => ({ ...prev, images: [...prev.images, ...filesToAdd] }))
   }
 
   const handleRemoveImage = (index) => {
@@ -218,6 +231,21 @@ export default function PropertyForm() {
       const response = await listingService.createListing(listingData)
       
       if (response.success) {
+        const listingId = response.data.id
+
+        // Upload images if any
+        if (formData.images.length > 0) {
+          const mediaFormData = new FormData()
+          formData.images.forEach((file, index) => {
+            mediaFormData.append("media", file)
+            if (index === formData.coverPhotoIndex) {
+              mediaFormData.append("is_primary", index)
+            }
+          })
+
+          await listingService.uploadMedia(listingId, mediaFormData)
+        }
+
         toast.success("Listing saved as draft")
         router.push("/my-listings")
       }
@@ -386,7 +414,7 @@ export default function PropertyForm() {
                     <SelectContent>
                       {listingTypes.map((type) => (
                         <SelectItem key={type} value={type}>
-                          {type === "sale" ? "For Sale" : type === "rent" ? "For Rent" : type === "pg" ? "PG" : "Hostel"}
+                          {type === "sale" ? "For Sale" : "For Rent"}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -851,25 +879,44 @@ export default function PropertyForm() {
             </CardHeader>
             <CardContent className="pt-6 space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="images" className="flex items-center gap-2">
-                  <ImageIcon className="h-4 w-4 text-primary" />
-                  Property Images *
+                <Label htmlFor="images" className="flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <ImageIcon className="h-4 w-4 text-primary" />
+                    Property Images *
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {formData.images.length}/6 images
+                  </span>
                 </Label>
-                <div className="border-2 border-dashed border-primary/30 rounded-lg p-8 text-center hover:border-primary/50 transition-colors">
-                  <ImageIcon className="h-12 w-12 mx-auto mb-4 text-primary/50" />
+                <div className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                  formData.images.length >= 6 
+                    ? "border-muted bg-muted/20 cursor-not-allowed" 
+                    : "border-primary/30 hover:border-primary/50"
+                }`}>
+                  <ImageIcon className={`h-12 w-12 mx-auto mb-4 ${
+                    formData.images.length >= 6 ? "text-muted-foreground/50" : "text-primary/50"
+                  }`} />
                   <Input
                     id="images"
                     type="file"
                     accept="image/*"
                     multiple
                     onChange={handleImageChange}
+                    disabled={formData.images.length >= 6}
                     className="hidden"
                   />
-                  <Label htmlFor="images" className="cursor-pointer">
+                  <Label htmlFor="images" className={`block text-center ${formData.images.length >= 6 ? "cursor-not-allowed" : "cursor-pointer"}`}>
                     <div className="space-y-2">
-                      <p className="text-sm font-medium text-primary">Click to upload images</p>
+                      <p className={`text-sm font-medium ${
+                        formData.images.length >= 6 ? "text-muted-foreground" : "text-primary"
+                      }`}>
+                        {formData.images.length >= 6 ? "Maximum images reached" : "Click to upload images"}
+                      </p>
                       <p className="text-xs text-muted-foreground">
-                        Upload multiple images (JPG, PNG, WEBP)
+                        {formData.images.length >= 6 
+                          ? "Remove images to upload new ones" 
+                          : "Upload up to 6 images (JPG, PNG, WEBP)"
+                        }
                       </p>
                     </div>
                   </Label>

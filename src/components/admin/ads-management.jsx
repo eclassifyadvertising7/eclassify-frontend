@@ -1,23 +1,24 @@
 "use client"
 import { useState, useEffect } from "react"
-import { Filter, Download, Eye, Check, X, Star, Trash2, Search, ChevronLeft, ChevronRight } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { Eye, Check, X, Star, Trash2, Search, ChevronLeft, ChevronRight } from "lucide-react"
 import { listingAdminService } from "@/app/services/api/listingAdminService"
 import { toast } from "sonner"
 import Tooltip from "@/components/ui/tooltip"
 import ConfirmModal from "@/components/ui/confirm-modal"
 
 export default function AdsManagement() {
+  const router = useRouter()
   const [listings, setListings] = useState([])
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState(null)
   const [filters, setFilters] = useState({
-    status: '',
+    status: 'pending',
     search: '',
     page: 1,
     limit: 20
   })
   const [pagination, setPagination] = useState(null)
-  const [showFilters, setShowFilters] = useState(false)
   const [selectedListing, setSelectedListing] = useState(null)
   const [showRejectModal, setShowRejectModal] = useState(false)
   const [showFeaturedModal, setShowFeaturedModal] = useState(false)
@@ -121,6 +122,15 @@ export default function AdsManagement() {
     return statusConfig[status] || 'bg-gray-100 text-gray-800'
   }
 
+  const capitalizeStatus = (status) => {
+    return status.charAt(0).toUpperCase() + status.slice(1)
+  }
+
+  const handleViewListing = (listing) => {
+    // Navigate to admin listing details page
+    router.push(`/admin/ads/${listing.id}`)
+  }
+
   const formatPrice = (price) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -155,53 +165,40 @@ export default function AdsManagement() {
             </div>
           )}
         </div>
-        <div className="flex space-x-3">
-          <button 
-            onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-          >
-            <Filter className="w-4 h-4" />
-            <span>Filter</span>
-          </button>
-        </div>
       </div>
 
-      {/* Filters */}
-      {showFilters && (
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-              <select
-                value={filters.status}
-                onChange={(e) => setFilters({ ...filters, status: e.target.value, page: 1 })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">All Status</option>
-                <option value="draft">Draft</option>
-                <option value="pending">Pending</option>
-                <option value="active">Active</option>
-                <option value="expired">Expired</option>
-                <option value="sold">Sold</option>
-                <option value="rejected">Rejected</option>
-              </select>
-            </div>
-            <div className="md:col-span-3">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  value={filters.search}
-                  onChange={(e) => setFilters({ ...filters, search: e.target.value, page: 1 })}
-                  placeholder="Search by title, description..."
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+      {/* Filters - Always Visible */}
+      <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+            <select
+              value={filters.status}
+              onChange={(e) => setFilters({ ...filters, status: e.target.value, page: 1 })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">All</option>
+              <option value="pending">Pending</option>
+              <option value="active">Active</option>
+              <option value="sold">Sold</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </div>
+          <div className="md:col-span-3">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                value={filters.search}
+                onChange={(e) => setFilters({ ...filters, search: e.target.value, page: 1 })}
+                placeholder="Search by title, description..."
+                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
             </div>
           </div>
         </div>
-      )}
+      </div>
 
       {/* Listings Table */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
@@ -287,11 +284,19 @@ export default function AdsManagement() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(listing.status)}`}>
-                          {listing.status}
+                          {capitalizeStatus(listing.status)}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex space-x-2">
+                          <Tooltip content="View Listing" position="top">
+                            <button 
+                              onClick={() => handleViewListing(listing)}
+                              className="text-blue-600 hover:text-blue-900 cursor-pointer transition-colors"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                          </Tooltip>
                           {listing.status === 'pending' && (
                             <>
                               <Tooltip content="Approve Listing" position="top">

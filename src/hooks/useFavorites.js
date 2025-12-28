@@ -82,7 +82,15 @@ export const useFavorites = () => {
       }
     } catch (error) {
       if (error.status === 400) {
-        toast.error('Already in favorites');
+        // Check specific error message
+        const errorMsg = error.message || error.data?.message || '';
+        if (errorMsg.toLowerCase().includes('own listing')) {
+          toast.error('You cannot favorite your own listing');
+        } else if (errorMsg.toLowerCase().includes('already')) {
+          toast.error('Already in favorites');
+        } else {
+          toast.error(errorMsg || 'Failed to add to favorites');
+        }
       } else {
         toast.error('Failed to add to favorites');
       }
@@ -225,8 +233,16 @@ export const useFavoriteStatus = (listingId) => {
       }
     } catch (error) {
       if (error.status === 400 && !isFavorited) {
-        toast.error('Already in favorites');
-        setIsFavorited(true);
+        // Check specific error message for 400 errors
+        const errorMsg = error.message || error.data?.message || '';
+        if (errorMsg.toLowerCase().includes('own listing')) {
+          toast.error('You cannot favorite your own listing');
+        } else if (errorMsg.toLowerCase().includes('already')) {
+          toast.error('Already in favorites');
+          setIsFavorited(true);
+        } else {
+          toast.error(errorMsg || 'Failed to add to favorites');
+        }
       } else if (error.status === 404 && isFavorited) {
         toast.error('Not found in favorites');
         setIsFavorited(false);

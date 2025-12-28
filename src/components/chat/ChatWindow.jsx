@@ -35,17 +35,31 @@ export default function ChatWindow({
 
   // Load messages and setup socket listeners
   useEffect(() => {
-    if (room?.id) {
-      loadMessages();
-      markAsRead();
+    if (!room?.id) return;
+
+    loadMessages();
+    markAsRead();
+    
+    let cleanupFn = null;
+    
+    // Wait for socket to be connected before setting up listeners
+    const setupSocketListeners = () => {
+      if (!socketService.isConnected()) {
+        console.log('Socket not connected yet, waiting...');
+        setTimeout(setupSocketListeners, 100);
+        return;
+      }
+
+      console.log('Setting up socket listeners for room:', room.id);
       
       // Join room via socket
       socketService.joinRoom(room.id, (data) => {
-        console.log('Joined room:', data.roomId);
+        console.log('Joined room:', data?.roomId);
       });
 
       // Listen for new messages
       const handleNewMessage = (data) => {
+        console.log('handleNewMessage called:', data);
         if (data.roomId === room.id) {
           setMessages(prev => [...prev, data.message]);
           scrollToBottom();
@@ -98,8 +112,9 @@ export default function ChatWindow({
       socketService.onUserTyping(handleUserTyping);
       socketService.onUserStopTyping(handleUserStopTyping);
 
-      // Cleanup
-      return () => {
+      // Store cleanup function
+      cleanupFn = () => {
+        console.log('Cleaning up socket listeners for room:', room.id);
         socketService.leaveRoom(room.id);
         socketService.offNewMessage(handleNewMessage);
         socketService.offMessageRead(handleMessageRead);
@@ -107,7 +122,16 @@ export default function ChatWindow({
         socketService.offUserTyping(handleUserTyping);
         socketService.offUserStopTyping(handleUserStopTyping);
       };
-    }
+    };
+
+    setupSocketListeners();
+
+    // Cleanup
+    return () => {
+      if (cleanupFn) {
+        cleanupFn();
+      }
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [room?.id, currentUserId]);
 
@@ -128,7 +152,13 @@ export default function ChatWindow({
 
   const markAsRead = async () => {
     try {
+      // Mark as read via HTTP API
       await markMessagesAsRead(room.id);
+      
+      // Also emit via socket for real-time update
+      if (socketService.isConnected()) {
+        socketService.markAsRead(room.id);
+      }
     } catch (error) {
       console.error('Failed to mark as read:', error);
     }
