@@ -8,7 +8,19 @@ import { io } from 'socket.io-client';
 // Get base URL without /api suffix for socket connection
 const getSocketURL = () => {
   const apiUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000/api';
-  return apiUrl.replace('/api', '');
+  // Remove /api suffix and ensure we have a valid URL
+  const baseUrl = apiUrl.replace('/api', '');
+  
+  // Validate the URL format
+  try {
+    const url = new URL(baseUrl);
+    console.log('Socket connecting to:', url.origin);
+    return url.origin;
+  } catch (error) {
+    console.error('Invalid NEXT_PUBLIC_BACKEND_URL:', apiUrl);
+    // Fallback to localhost
+    return 'http://localhost:5000';
+  }
 };
 
 class SocketService {
