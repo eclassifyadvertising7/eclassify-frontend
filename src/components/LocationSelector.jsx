@@ -21,6 +21,7 @@ export default function LocationSelector({
   const [filteredCities, setFilteredCities] = useState([]);
   const [loadingCities, setLoadingCities] = useState(false);
   const [loadingPopular, setLoadingPopular] = useState(false);
+  const [popularCitiesInitialized, setPopularCitiesInitialized] = useState(false);
   const [waitingForLocation, setWaitingForLocation] = useState(false);
   const dropdownRef = useRef(null);
   const searchTimeoutRef = useRef(null);
@@ -34,10 +35,13 @@ export default function LocationSelector({
 
   const { selectedLocation, updateLocation, getLocationDisplayName } = useLocation();
 
-  // Load popular cities on component mount
+  // Load popular cities ONCE on component mount
+  // Uses localStorage as cache to avoid repeated API calls
   useEffect(() => {
+    if (popularCitiesInitialized) return; // Prevent multiple API calls
+    
     loadPopularCities();
-  }, []);
+  }, [popularCitiesInitialized]);
 
   // Auto-handle location when it becomes available after user requested it
   useEffect(() => {
@@ -136,8 +140,29 @@ export default function LocationSelector({
   }, [searchTerm]);
 
   const loadPopularCities = async () => {
+    if (popularCitiesInitialized) return; // Already loaded
+    
     setLoadingPopular(true);
     try {
+      // Step 1: Try to load from localStorage first (instant)
+      const cachedCities = localStorage.getItem('popularCities');
+      const cacheTimestamp = localStorage.getItem('popularCitiesTimestamp');
+      const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+      
+      // Check if cache exists and is still valid (less than 24 hours old)
+      if (cachedCities && cacheTimestamp) {
+        const cacheAge = Date.now() - parseInt(cacheTimestamp);
+        if (cacheAge < CACHE_DURATION) {
+          // Use cached data
+          const parsedCities = JSON.parse(cachedCities);
+          setPopularCities(parsedCities);
+          setPopularCitiesInitialized(true);
+          setLoadingPopular(false);
+          return; // Exit early, no API call needed
+        }
+      }
+      
+      // Step 2: Cache is missing or expired, fetch from API
       const result = await getPopularCities();
       if (result.success) {
         const formattedCities = result.data.map(city => ({
@@ -150,12 +175,19 @@ export default function LocationSelector({
           longitude: city.longitude,
           type: 'popular'
         }));
+        
+        // Update state
         setPopularCities(formattedCities);
+        
+        // Save to localStorage with timestamp
+        localStorage.setItem('popularCities', JSON.stringify(formattedCities));
+        localStorage.setItem('popularCitiesTimestamp', Date.now().toString());
       }
     } catch (error) {
       console.error('Error loading popular cities:', error);
     } finally {
       setLoadingPopular(false);
+      setPopularCitiesInitialized(true);
     }
   };
 

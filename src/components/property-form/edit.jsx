@@ -15,6 +15,7 @@ import { StateSelect } from "@/components/ui/state-select"
 import { CitySelect } from "@/components/ui/city-select"
 import listingService from "@/app/services/api/listingService"
 import { toast } from "sonner"
+import QuotaExhaustedModal from "@/components/ui/quota-exhausted-modal"
 import { 
   Home, 
   FileText, 
@@ -70,6 +71,7 @@ export default function PropertyEditForm({ listing }) {
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState(1)
   const [submitting, setSubmitting] = useState(false)
+  const [showQuotaModal, setShowQuotaModal] = useState(false)
   
   const [formData, setFormData] = useState({
     title: "",
@@ -317,10 +319,19 @@ export default function PropertyEditForm({ listing }) {
       }
 
       // Submit for approval
-      await listingService.submitForApproval(listing.id)
-
-      toast.success("Listing updated and submitted successfully!")
-      router.push("/my-listings")
+      try {
+        await listingService.submitForApproval(listing.id)
+        toast.success("Listing updated and submitted successfully!")
+        router.push("/my-listings")
+      } catch (submitError) {
+        // Handle quota exhausted (402 Payment Required)
+        if (submitError.status === 402) {
+          setShowQuotaModal(true)
+          toast.info("Listing updated and saved as draft")
+        } else {
+          throw submitError
+        }
+      }
     } catch (error) {
       console.error("Error submitting listing:", error)
       toast.error(error.message || "Failed to submit listing")
@@ -1036,6 +1047,12 @@ export default function PropertyEditForm({ listing }) {
           )}
         </div>
       </form>
+
+      {/* Quota Exhausted Modal */}
+      <QuotaExhaustedModal
+        isOpen={showQuotaModal}
+        onClose={() => setShowQuotaModal(false)}
+      />
     </div>
   )
 }

@@ -16,6 +16,7 @@ import { CitySelect } from "@/components/ui/city-select"
 import { getCarBrands, getCarModels, getCarVariants } from "@/app/services/api/carDataService"
 import listingService from "@/app/services/api/listingService"
 import { toast } from "sonner"
+import QuotaExhaustedModal from "@/components/ui/quota-exhausted-modal"
 import { 
   Car, 
   FileText, 
@@ -71,6 +72,7 @@ export default function CarForm() {
   const [loading, setLoading] = useState({ brands: false, models: false, variants: false })
   const [submitting, setSubmitting] = useState(false)
   const [savingDraft, setSavingDraft] = useState(false)
+  const [showQuotaModal, setShowQuotaModal] = useState(false)
   
   const [formData, setFormData] = useState({
     brandId: "",
@@ -394,10 +396,20 @@ export default function CarForm() {
       })
 
       await listingService.uploadMedia(listingId, mediaFormData)
-      await listingService.submitForApproval(listingId)
-
-      toast.success("Listing submitted successfully! Awaiting admin approval.")
-      router.push("/my-listings")
+      
+      try {
+        await listingService.submitForApproval(listingId)
+        toast.success("Listing submitted successfully! Awaiting admin approval.")
+        router.push("/my-listings")
+      } catch (submitError) {
+        // Handle quota exhausted (402 Payment Required)
+        if (submitError.status === 402) {
+          setShowQuotaModal(true)
+          toast.info("Listing saved as draft")
+        } else {
+          throw submitError
+        }
+      }
     } catch (error) {
       console.error("Error submitting listing:", error)
       toast.error(error.message || "Failed to submit listing")
@@ -1158,6 +1170,12 @@ export default function CarForm() {
           )}
         </div>
       </form>
+
+      {/* Quota Exhausted Modal */}
+      <QuotaExhaustedModal
+        isOpen={showQuotaModal}
+        onClose={() => setShowQuotaModal(false)}
+      />
     </div>
   )
 }
