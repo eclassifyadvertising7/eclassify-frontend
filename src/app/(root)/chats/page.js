@@ -58,13 +58,7 @@ function ChatsContent() {
       setShowSafetyDialog(true);
     }
 
-    // Connect to socket
-    socketService.connect();
-
-    // Cleanup on unmount
-    return () => {
-      socketService.disconnect();
-    };
+    // Socket connection is handled by SocketContext - no need to connect/disconnect here
   }, [router]);
 
   useEffect(() => {
