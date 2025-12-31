@@ -15,6 +15,7 @@ export { default as carDataService } from './carDataService';
 export { default as subscriptionService } from './subscriptionService';
 export { default as favoritesService } from './favoritesService';
 export { default as activityService } from './activityService';
+export { default as profileService } from './profileService';
 export * as adminLocationService from './adminLocationService';
 export * as adminNotificationsService from './adminNotificationsService';
 export * as rolesService from './rolesService';

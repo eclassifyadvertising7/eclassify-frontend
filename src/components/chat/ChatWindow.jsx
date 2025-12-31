@@ -10,6 +10,7 @@ import ChatInput from "./ChatInput";
 import ImageModal from "./ImageModal";
 import { getMessages, sendImageMessage, markMessagesAsRead } from "@/app/services/api/chatService";
 import socketService from "@/app/services/socketService";
+import { useSocket } from "@/app/context/SocketContext";
 import { toast } from "sonner";
 
 export default function ChatWindow({ 
@@ -21,6 +22,7 @@ export default function ChatWindow({
   onDelete,
   onClose
 }) {
+  const { isConnected } = useSocket();
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -29,9 +31,16 @@ export default function ChatWindow({
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+  const socketSetupTimeoutRef = useRef(null);
+  const socketSetupAttemptsRef = useRef(0);
 
   const isBuyer = room ? currentUserId === room.buyerId : false;
   const otherUser = room ? (isBuyer ? room.seller : room.buyer) : null;
+
+  // Show connection status
+  useEffect(() => {
+    console.log('Socket connection status:', isConnected);
+  }, [isConnected]);
 
   // Load messages and setup socket listeners
   useEffect(() => {
@@ -41,16 +50,27 @@ export default function ChatWindow({
     markAsRead();
     
     let cleanupFn = null;
+    socketSetupAttemptsRef.current = 0;
     
     // Wait for socket to be connected before setting up listeners
     const setupSocketListeners = () => {
-      if (!socketService.isConnected()) {
-        console.log('Socket not connected yet, waiting...');
-        setTimeout(setupSocketListeners, 100);
+      // Limit retry attempts to prevent infinite loop
+      if (socketSetupAttemptsRef.current >= 50) {
+        console.warn('Socket connection timeout after 50 attempts (5 seconds). Please check your backend connection.');
+        toast.error('Unable to connect to chat server. Please refresh the page.');
         return;
       }
 
-      console.log('Setting up socket listeners for room:', room.id);
+      if (!socketService.isConnected()) {
+        socketSetupAttemptsRef.current++;
+        if (socketSetupAttemptsRef.current === 1) {
+          console.log('Waiting for socket connection...');
+        }
+        socketSetupTimeoutRef.current = setTimeout(setupSocketListeners, 100);
+        return;
+      }
+
+      console.log('✓ Socket connected! Setting up listeners for room:', room.id);
       
       // Join room via socket
       socketService.joinRoom(room.id, (data) => {
@@ -128,6 +148,12 @@ export default function ChatWindow({
 
     // Cleanup
     return () => {
+      // Clear socket setup timeout
+      if (socketSetupTimeoutRef.current) {
+        clearTimeout(socketSetupTimeoutRef.current);
+        socketSetupTimeoutRef.current = null;
+      }
+      
       if (cleanupFn) {
         cleanupFn();
       }
@@ -166,16 +192,19 @@ export default function ChatWindow({
 
   const handleSendMessage = async (text) => {
     if (!socketService.isConnected()) {
-      toast.error('Not connected to chat server');
+      toast.error('Not connected to chat server. Please check your connection.');
+      console.error('Send failed: Socket not connected. isConnected:', isConnected);
       return;
     }
 
     try {
       setSending(true);
+      console.log('Sending message via socket:', { roomId: room.id, text });
       // Send via socket for instant delivery
       socketService.sendMessage(room.id, text);
       // Message will be added via socket event listener
     } catch (error) {
+      console.error('Failed to send message:', error);
       toast.error(error.message || 'Failed to send message');
     } finally {
       setSending(false);
@@ -266,6 +295,13 @@ export default function ChatWindow({
 
   return (
     <div className="flex-1 flex flex-col bg-white">
+      {/* Connection Status Banner */}
+      {!isConnected && (
+        <div className="bg-yellow-50 border-b border-yellow-200 px-4 py-2 text-sm text-yellow-800">
+          <span className="font-medium">⚠️ Connecting to chat server...</span>
+        </div>
+      )}
+      
       {/* Header */}
       <ChatHeader
         room={room}
@@ -327,7 +363,7 @@ export default function ChatWindow({
         onSendMessage={handleSendMessage}
         onSendImage={handleSendImage}
         onTyping={handleTyping}
-        disabled={sending || !room.isActive}
+        disabled={sending || !room.isActive || !isConnected}
       />
 
       {/* Image Modal */}

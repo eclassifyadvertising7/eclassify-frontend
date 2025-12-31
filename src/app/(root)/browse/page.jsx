@@ -97,9 +97,17 @@ function BrowseContent() {
       }
       
       if (result.success) {
-        const listingsData = Array.isArray(result.data) ? result.data : []
+        // Handle different response structures
+        let listingsData = []
+        if (searchQuery && result.data?.listings) {
+          // Search results have listings nested in data.listings
+          listingsData = result.data.listings
+        } else if (Array.isArray(result.data)) {
+          // Other endpoints return data as array directly
+          listingsData = result.data
+        }
         setListings(listingsData)
-        setPagination(result.pagination)
+        setPagination(result.pagination || result.data?.pagination)
         
         // Log search with actual results count only for authenticated users
         if (searchQuery && isAuthenticated && listingsData.length > 0) {
