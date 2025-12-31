@@ -387,22 +387,21 @@ export default function CarEditForm({ listing }) {
       }
 
       // Submit for approval
-      try {
-        await listingService.submitForApproval(listing.id)
-        toast.success("Listing updated and submitted successfully!")
-        router.push("/my-listings")
-      } catch (submitError) {
-        // Handle quota exhausted (402 Payment Required)
-        if (submitError.status === 402) {
-          setShowQuotaModal(true)
-          toast.info("Listing updated and saved as draft")
-        } else {
-          throw submitError
-        }
-      }
+      await listingService.submitForApproval(listing.id)
+
+      toast.success("Listing updated and submitted successfully!")
+      router.push("/my-listings")
     } catch (error) {
       console.error("Error updating listing:", error)
-      toast.error(error.message || "Failed to update listing")
+      
+      // Handle quota exhausted (402 Payment Required)
+      if (error.status === 402) {
+        console.log("Quota exhausted, showing modal")
+        setShowQuotaModal(true)
+        toast.info("Listing updated and saved as draft")
+      } else {
+        toast.error(error.message || "Failed to update listing")
+      }
     } finally {
       setSubmitting(false)
     }

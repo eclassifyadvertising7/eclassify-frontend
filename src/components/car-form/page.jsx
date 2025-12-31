@@ -396,23 +396,21 @@ export default function CarForm() {
       })
 
       await listingService.uploadMedia(listingId, mediaFormData)
-      
-      try {
-        await listingService.submitForApproval(listingId)
-        toast.success("Listing submitted successfully! Awaiting admin approval.")
-        router.push("/my-listings")
-      } catch (submitError) {
-        // Handle quota exhausted (402 Payment Required)
-        if (submitError.status === 402) {
-          setShowQuotaModal(true)
-          toast.info("Listing saved as draft")
-        } else {
-          throw submitError
-        }
-      }
+      await listingService.submitForApproval(listingId)
+
+      toast.success("Listing submitted successfully! Awaiting admin approval.")
+      router.push("/my-listings")
     } catch (error) {
       console.error("Error submitting listing:", error)
-      toast.error(error.message || "Failed to submit listing")
+      
+      // Handle quota exhausted (402 Payment Required)
+      if (error.status === 402) {
+        console.log("Quota exhausted, showing modal")
+        setShowQuotaModal(true)
+        toast.info("Listing saved as draft")
+      } else {
+        toast.error(error.message || "Failed to submit listing")
+      }
     } finally {
       setSubmitting(false)
     }

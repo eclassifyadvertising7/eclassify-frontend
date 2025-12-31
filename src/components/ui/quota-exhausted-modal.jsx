@@ -1,12 +1,17 @@
 "use client"
 import { AlertTriangle, X, CreditCard } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useEffect } from "react"
 
 export default function QuotaExhaustedModal({ 
   isOpen, 
   onClose
 }) {
   const router = useRouter()
+
+  useEffect(() => {
+    console.log("QuotaExhaustedModal isOpen:", isOpen)
+  }, [isOpen])
 
   if (!isOpen) return null
 
