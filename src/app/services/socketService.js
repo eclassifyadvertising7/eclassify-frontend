@@ -8,8 +8,8 @@ import { io } from 'socket.io-client';
 // Get base URL without /api suffix for socket connection
 const getSocketURL = () => {
   const apiUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000/api';
-  // Remove /api suffix and ensure we have a valid URL
-  const baseUrl = apiUrl.replace('/api', '');
+  // Remove /api suffix only from the end (not from subdomain)
+  const baseUrl = apiUrl.replace(/\/api$/, '');
   
   // Validate the URL format
   try {
